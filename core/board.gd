@@ -441,7 +441,7 @@ func _validate_board_state() -> bool:
 				continue
 			if cell_blocks_movement(x, y):
 				continue
-			if get_color(x, y) == TileCodes.EMPTY:
+			if TileCodes.is_empty_cell(get_cell(x, y)):
 				return false
 	return true
 
@@ -496,8 +496,7 @@ func reshuffle(rng: GameRNG) -> void:
 		for x in range(width):
 			if not is_playable(x, y) or cell_blocks_movement(x, y):
 				continue
-			var c := get_color(x, y)
-			if c != TileCodes.EMPTY:
+			if not TileCodes.is_empty_cell(get_cell(x, y)):
 				colors.append(get_cell(x, y))  # simpan encoded (warna+special)
 				slots.append(Vector2i(x, y))
 

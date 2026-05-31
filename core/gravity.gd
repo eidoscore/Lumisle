@@ -25,8 +25,8 @@ static func _apply_gravity_column(board: Board, x: int, events: Array) -> void:
 			write_row = y - 1
 			continue
 		var cell := board.get_cell(x, y)
-		if TileCodes.decode_color(cell) != TileCodes.EMPTY:
-			# Ada tile di (x,y). Pindah ke write_row kalau berbeda.
+		if not TileCodes.is_empty_cell(cell):
+			# Ada tile/special di (x,y). Pindah ke write_row kalau berbeda.
 			if write_row != y:
 				board.set_cell(x, write_row, cell)
 				board.set_cell(x, y, TileCodes.EMPTY)
@@ -35,7 +35,7 @@ static func _apply_gravity_column(board: Board, x: int, events: Array) -> void:
 					{"from": Vector2i(x, y), "to": Vector2i(x, write_row)}
 				))
 			write_row -= 1
-		# kalau EMPTY, write_row tetap (akan diisi oleh tile di atasnya / refill)
+		# kalau kosong, write_row tetap (akan diisi oleh tile di atasnya / refill)
 
 
 ## Isi sel kosong dari atas dengan warna acak (color_subset). Kembalikan TileSpawned.
@@ -49,7 +49,7 @@ static func apply_refill(board: Board, rng: GameRNG) -> Array:
 			# Blocker tidak diisi tile baru (itu obstacle, bukan slot tile).
 			if board.cell_blocks_movement(x, y):
 				continue
-			if TileCodes.decode_color(board.get_cell(x, y)) == TileCodes.EMPTY:
+			if TileCodes.is_empty_cell(board.get_cell(x, y)):
 				var color := rng.pick_packed(board.color_subset)
 				board.set_cell(x, y, TileCodes.encode(color))
 				events.append(MoveAction.make(

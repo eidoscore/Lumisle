@@ -49,6 +49,13 @@ static func decode_special(value: int) -> int:
 	return (value >> _SPECIAL_SHIFT) & _SPECIAL_MASK
 
 
+## Apakah cell BENAR-BENAR kosong (tidak ada tile maupun special)?
+## PENTING: special di-encode dengan color 0 (EMPTY), jadi cek warna saja TIDAK cukup —
+## special yang valid akan salah dianggap "lubang" oleh gravity/refill (bug Fase 2).
+static func is_empty_cell(value: int) -> bool:
+	return decode_color(value) == EMPTY and decode_special(value) == SPECIAL_NONE
+
+
 ## Apakah tipe obstacle ini menahan gravity? (dipakai gravity.gd T1.6 tanpa instantiate)
 static func obstacle_blocks_movement(obstacle_type: int) -> bool:
 	return obstacle_type == ObstacleType.CRATE

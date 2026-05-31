@@ -33,6 +33,7 @@ var board: Board = null
 var _move_rng: GameRNG = null
 var _tiles: Array = []                # ColorRect per cell, index = board.idx(x,y)
 var _tiles_root: Node2D = null
+var _disp: PackedInt32Array = PackedInt32Array()  # state TAMPILAN (encoded), di-replay dari report — BUKAN baca board final
 
 var _input_enabled := true
 var _animating := false
@@ -65,10 +66,28 @@ var on_tiles_cleared: Callable = Callable()
 func setup_board(p_board: Board, move_rng: GameRNG) -> void:
 	board = p_board
 	_move_rng = move_rng
+	_sync_disp_from_board()
 	_build_tiles()
 	_build_overlay()
 	_build_fx()
 	_refresh_all()
+
+
+## Salin state board → grid tampilan (_disp). Dipakai saat init & sinkron pra-swap.
+func _sync_disp_from_board() -> void:
+	_disp = board.cells.duplicate()
+
+
+func _disp_cell(x: int, y: int) -> int:
+	return _disp[board.idx(x, y)]
+
+
+func _disp_color(x: int, y: int) -> int:
+	return TileCodes.decode_color(_disp_cell(x, y))
+
+
+func _disp_special(x: int, y: int) -> int:
+	return TileCodes.decode_special(_disp_cell(x, y))
 
 
 # ---------------------------------------------------------------------------
@@ -243,7 +262,7 @@ func _refresh_tile(x: int, y: int) -> void:
 	# Marker special (placeholder glyph sampai ikon art di T2.5).
 	if rect.has_meta("marker"):
 		var marker: Label = rect.get_meta("marker")
-		marker.text = _special_glyph(board.get_special(x, y)) if board.is_playable(x, y) else ""
+		marker.text = _special_glyph(_disp_special(x, y)) if board.is_playable(x, y) else ""
 
 
 ## Glyph placeholder per tipe special (dibedakan jelas; ikon final = art Fase 2).
@@ -257,16 +276,17 @@ func _special_glyph(special_type: int) -> String:
 		_: return ""
 
 
+## Warna tile dari grid TAMPILAN (_disp), bukan board final (penting utk animasi replay).
 func _color_for(x: int, y: int) -> Color:
 	if not board.is_playable(x, y):
 		return Color(0, 0, 0, 0)
 	if board.cell_blocks_movement(x, y):
 		return Color(0.5, 0.4, 0.3)
-	var c := board.get_color(x, y)
+	var c := _disp_color(x, y)
 	if c == TileCodes.EMPTY:
 		return Color(0, 0, 0, 0.12)
 	var col: Color = COLOR_PALETTE[c] if c < COLOR_PALETTE.size() else Color.WHITE
-	if board.get_special(x, y) != TileCodes.SPECIAL_NONE:
+	if _disp_special(x, y) != TileCodes.SPECIAL_NONE:
 		col = col.lightened(0.35)
 	return col
 

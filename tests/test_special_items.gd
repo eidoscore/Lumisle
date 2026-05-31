@@ -299,3 +299,49 @@ func test_chain_reaction_no_infinite_loop() -> void:
 	# Tidak peduli hasil persis; yang penting selesai & board valid (tidak hang/crash).
 	assert_not_null(report, "resolve selesai tanpa hang")
 	assert_true(report.final_board_hash != 0 or report.error == "" , "resolusi tuntas")
+
+
+# ---------------------------------------------------------------------------
+# Regresi: special yang dibuat HARUS bertahan di board setelah giliran.
+# Bug (2026-06-01): special di-encode color 0 (EMPTY) → gravity/refill anggap lubang
+# → refill menimpa special. Fix: TileCodes.is_empty_cell cek warna DAN special.
+# ---------------------------------------------------------------------------
+
+func test_created_special_survives_turn() -> void:
+	var b := BoardTestHelper.from_grid([
+		"11213",
+		"45142",
+		"23451",
+		"34512",
+		"51234",
+	])
+	var report := b.resolve_swap(2, 0, 2, 1, GameRNG.new(777))
+	assert_true(report.is_accepted, "line-4 swap diterima")
+	var surviving := 0
+	for y in range(b.height):
+		for x in range(b.width):
+			if b.get_special(x, y) != TileCodes.SPECIAL_NONE:
+				surviving += 1
+	assert_eq(surviving, 1, "roket yang dibuat tetap ada di board (tidak ditimpa refill)")
+
+
+func test_is_empty_cell_helper() -> void:
+	# Tile biasa: tidak kosong. Special (color 0): TIDAK kosong. Benar-benar 0: kosong.
+	assert_false(TileCodes.is_empty_cell(TileCodes.encode(3)), "tile warna = tidak kosong")
+	assert_false(TileCodes.is_empty_cell(TileCodes.encode(0, TileCodes.SPECIAL_ROCKET_H)),
+		"special (color 0) = TIDAK kosong")
+	assert_true(TileCodes.is_empty_cell(TileCodes.EMPTY), "EMPTY murni = kosong")
+
+
+func test_board_valid_after_special_created() -> void:
+	# Setelah giliran yang membuat special, board harus lolos validasi (tidak ada
+	# 'lubang' palsu dari special yang dianggap kosong).
+	var b := BoardTestHelper.from_grid([
+		"11213",
+		"45142",
+		"23451",
+		"34512",
+		"51234",
+	])
+	var report := b.resolve_swap(2, 0, 2, 1, GameRNG.new(777))
+	assert_eq(report.error, "", "tidak ada rollback/error (board valid)")
