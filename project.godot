@@ -1,0 +1,39 @@
+; Engine configuration file.
+; Lumisle — match-3 hybrid-casual (Android, portrait, GL Compatibility)
+; Acuan: docs/04-tdd-arsitektur.md, docs/13-implementation-plan.md (T0.1)
+
+config_version=5
+
+[application]
+
+config/name="Lumisle"
+config/description="Match-3 hybrid-casual puzzle. Kumpulkan Lumi, hidupkan kembali pulau."
+run/main_scene="res://ui/main_menu.tscn"
+config/features=PackedStringArray("4.6", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[autoload]
+
+GameState="*res://services/game_state.gd"
+SceneManager="*res://services/scene_manager.gd"
+SaveManager="*res://meta/save_manager.gd"
+AudioManager="*res://services/audio_manager.gd"
+Settings="*res://services/settings.gd"
+
+[display]
+
+window/size/viewport_width=1080
+window/size/viewport_height=1920
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+window/handheld/orientation=1
+
+[dotnet]
+
+project/assembly_name="Lumisle"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true

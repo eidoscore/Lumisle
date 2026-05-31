@@ -1,0 +1,47 @@
+name: CI
+
+# T0.6 — CI skeleton. Jalankan unit test (GUT) headless tiap push/PR.
+# Export Android = placeholder (allow-failure) sampai T0.9/T8.8 siap.
+# Acuan: docs/13-implementation-plan.md T0.6, dok 04 §12 (cegah panik export).
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+    branches: [main]
+
+env:
+  GODOT_VERSION: "4.6.3"
+
+jobs:
+  unit-tests:
+    name: GUT Unit Tests (headless)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          use-dotnet: false
+          include-templates: false
+
+      - name: Import project (build .godot cache)
+        run: godot --headless --import
+        continue-on-error: true
+
+      - name: Run GUT tests
+        run: godot --headless -s addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.json
+
+  android-build:
+    name: Android Export (placeholder)
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    continue-on-error: true   # T0.6: boleh gagal dulu; diaktifkan penuh di T8.8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Placeholder
+        run: echo "Android export aktif penuh di T8.8 (JDK17, SDK, keystore, AAB arm64-v8a)."

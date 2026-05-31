@@ -1,0 +1,30 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+/.import/
+
+# Exported builds & artefak
+*.apk
+*.aab
+*.tmp
+export/
+build/
+
+# Keystore & signing (JANGAN commit — rahasia)
+*.keystore
+*.jks
+export_presets.cfg
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Engine binary (jangan masuk repo project — terlalu besar)
+/Godot_v*-stable_win64/
+/Godot_v*.exe
+
+# Save game lokal (kalau ada yang nyasar ke folder project)
+*.save

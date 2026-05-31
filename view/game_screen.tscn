@@ -1,0 +1,48 @@
+[gd_scene load_steps=2 format=3 uid="uid://b0lumislegamescreen0"]
+
+[ext_resource type="Script" path="res://view/game_screen.gd" id="1_gamescreen"]
+
+[node name="GameScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_gamescreen")
+
+[node name="BoardView" type="Node2D" parent="."]
+
+[node name="TileLayer" type="Node2D" parent="BoardView"]
+
+[node name="SpecialLayer" type="Node2D" parent="BoardView"]
+
+[node name="ObstacleLayer" type="Node2D" parent="BoardView"]
+
+[node name="EffectsLayer" type="Node2D" parent="BoardView"]
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="PlaceholderLabel" type="Label" parent="HUD"]
+offset_left = 40.0
+offset_top = 120.0
+offset_right = 600.0
+offset_bottom = 200.0
+text = "GameScreen (placeholder) — board di T1.11"
+
+[node name="BackButton" type="Button" parent="HUD"]
+offset_left = 40.0
+offset_top = 1600.0
+offset_right = 300.0
+offset_bottom = 1680.0
+text = "Kembali"
+
+[node name="WinButton" type="Button" parent="HUD"]
+offset_left = 340.0
+offset_top = 1600.0
+offset_right = 700.0
+offset_bottom = 1680.0
+text = "Simulasi Menang"
+
+[node name="PopupLayer" type="CanvasLayer" parent="."]
+
+[connection signal="pressed" from="HUD/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="HUD/WinButton" to="." method="_on_win_pressed"]
