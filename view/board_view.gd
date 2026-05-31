@@ -79,6 +79,17 @@ func _build_tiles() -> void:
 			rect.size = Vector2(vis, vis)
 			rect.pivot_offset = Vector2(vis, vis) * 0.5
 			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			# Marker glyph untuk special (placeholder; ikon proper di T2.5/art).
+			var marker := Label.new()
+			marker.size = Vector2(vis, vis)
+			marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			marker.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			marker.add_theme_font_size_override("font_size", 56)
+			marker.add_theme_color_override("font_color", Color(0.1, 0.1, 0.12))
+			marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			marker.text = ""
+			rect.add_child(marker)
+			rect.set_meta("marker", marker)
 			_tiles_root.add_child(rect)
 			_tiles[board.idx(x, y)] = rect
 	_layout_tiles()
@@ -173,6 +184,21 @@ func _refresh_tile(x: int, y: int) -> void:
 	rect.modulate = Color.WHITE
 	rect.color = _color_for(x, y)
 	rect.visible = rect.color.a > 0.0
+	# Marker special (placeholder glyph sampai ikon art di T2.5).
+	if rect.has_meta("marker"):
+		var marker: Label = rect.get_meta("marker")
+		marker.text = _special_glyph(board.get_special(x, y)) if board.is_playable(x, y) else ""
+
+
+## Glyph placeholder per tipe special (dibedakan jelas; ikon final = art Fase 2).
+func _special_glyph(special_type: int) -> String:
+	match special_type:
+		TileCodes.SPECIAL_ROCKET_H: return "↔"
+		TileCodes.SPECIAL_ROCKET_V: return "↕"
+		TileCodes.SPECIAL_BOMB: return "✸"
+		TileCodes.SPECIAL_COLORBOMB: return "◎"
+		TileCodes.SPECIAL_PROPELLER: return "✜"
+		_: return ""
 
 
 func _color_for(x: int, y: int) -> Color:

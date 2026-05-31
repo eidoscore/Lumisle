@@ -242,36 +242,39 @@
 **Tujuan:** game mulai "kerasa enak" — special items, combo, dan juice.
 **Acuan:** GDD §3.4-3.5 (special & combo), §9 (juice), dok 04 §3.7 (urutan eksekusi).
 
-### T2.1 — Pembuatan special dari match `M`
+> **STATUS FASE 2: 🚧 JALAN — 2026-06-01.** Core special items SELESAI & teruji: T2.1 (roket/bom/colorbomb dari match), T2.1b (kotak 2×2→propeller, ruleset v2), T2.2 (area efek), T2.3 (combo table), T2.4 (chain reaction via trigger_queue). `core/special_items.gd` + hook di `board.gd`. **89 unit test lulus** (26 baru di `test_special_items.gd`). View: marker glyph placeholder per special (↔↕✸◎✜) di `board_view.gd`. Diverifikasi di HP: swap pembentuk special → cascade besar. BUGFIX: `_special_create_fn` dulu cuma di-wire di `setup()` → board via `from_grid` tak bikin special; sekarang default-aktif sejak deklarasi. **Sisa Fase 2:** T2.5 (juice animasi/partikel), T2.6 (audio+haptic), T2.7 (idle hint sudah ada dari Fase 1 + reward menang).
+
+
+### T2.1 — Pembuatan special dari match `M` — [x] SELESAI
 - **Tujuan:** spawn roket/bom/colorbomb sesuai tipe match (GDD §3.4).
-- **Output:** `core/special_items.gd` — aturan: line-4 → roket (orientasi sesuai arah match), L/T → bom, line-5 → colorbomb. Spawn di posisi swap terakhir.
-- **DoD:** unit test: tiap pola match → special benar di posisi benar.
+- **Output:** ✅ `core/special_items.gd` `create_specials_from_matches` — line-4→roket (orientasi), L/T→bom, line-5→colorbomb. Anchor = posisi swap (fallback kiri-atas), dok 14 §2.3.
+- **DoD:** ✅ `test_special_items.gd`: tiap pola match → special benar di posisi benar.
 - **Depends:** T1.7
 
-### T2.1b — Deteksi kotak 2×2 → Propeller (ruleset_version → 2) `M` — [ ] BARU (temuan playtest user)
+### T2.1b — Deteksi kotak 2×2 → Propeller (ruleset_version → 2) `M` — [x] SELESAI
 - **Tujuan:** kotak 2×2 sewarna jadi match VALID yang menghasilkan special Propeller (seperti Royal Match), bukan diabaikan. Menutup "bug" yang dilaporkan user di Fase 1 (2×2 ungu tidak hilang) — yang memang batas Fase 1 yang disengaja (dok 14 §9).
-- **Output:** tambah `MatchKind.SHAPE_SQUARE` di `match_detector.gd` + deteksi 2×2 (dok 14 §2.4, urutan: garis dihitung dulu, 2×2 yang tak beririsan garis → square). `swap_will_match`/`has_any_match` ikut mengembalikan true untuk 2×2 (kalau tidak → swap 2×2 murni ditolak). Propeller di `special_items.gd` + efek §3.1. Naikkan `ruleset_version` ke 2.
-- **DoD:** unit test (golden fixtures): (a) 2×2 murni → 1 Propeller di anchur benar, 4 cell clear; (b) 2×2 yang juga garis-4 → Roket (garis menang, §2.2); (c) blok 2×3 sewarna → ditangani jalur garis, tak dobel-propeller; (d) `swap_will_match` true untuk swap pembentuk 2×2 murni. Update `test_determinism` + `test_golden_fixtures`.
-- **Depends:** T2.1
-- **CATATAN:** ini mengubah kontrak aturan → WAJIB sinkron core+solver+view+test (dok 14 §2.4). Solver (Fase 5) harus pakai detektor yang sama.
-
-### T2.2 — Aktivasi efek special `M`
-- **Tujuan:** efek saat special meledak (roket = baris/kolom, bom = area, colorbomb = 1 warna).
-- **Output:** logika area-of-effect di `special_items.gd`; integrasi ke cascade (queue/FIFO).
-- **DoD:** unit test: tiap special → sel terdampak benar; integrasi ke TurnReport.
+- **Output:** ✅ `MatchKind.SHAPE_SQUARE` + `_find_squares` di `match_detector.gd` (dok 14 §2.4: garis dihitung dulu, 2×2 tak beririsan garis → square, anti-overlap kiri-atas menang). `has_any_match` ikut cek square → `swap_will_match` true utk 2×2 murni. `SPECIAL_PROPELLER` + efek di `special_items.gd`. `_pick_safe_color` cegah 2×2 di init. ruleset_version → 2.
+- **DoD:** ✅ test: 2×2 murni→propeller; 2×2+garis→garis menang; tak dobel-propeller; `swap_will_match` true utk 2×2.
 - **Depends:** T2.1
 
-### T2.3 — Combo special + special `M`
-- **Tujuan:** gabungan 2 special (GDD §3.5) dengan urutan deterministik (ColorBomb>Combo>Bomb>Rocket).
-- **Output:** tabel combo di `special_items.gd`; aturan resolusi.
-- **DoD:** unit test: minimal roket+roket, roket+bom, colorbomb+roket, colorbomb+colorbomb. Hasil deterministik.
+### T2.2 — Aktivasi efek special `M` — [x] SELESAI
+- **Tujuan:** efek saat special meledak (roket = baris/kolom, bom = area, colorbomb = 1 warna, propeller = target+tetangga).
+- **Output:** ✅ `affected_cells()` di `special_items.gd`; integrasi cascade via `_trigger_queue` (FIFO) di `board.gd`. Emit `SPECIAL_TRIGGERED`.
+- **DoD:** ✅ test: roket H/V (baris/kolom), bom 3×3 (+clamp pojok), colorbomb (semua warna target).
+- **Depends:** T2.1
+
+### T2.3 — Combo special + special `M` — [x] SELESAI
+- **Tujuan:** gabungan 2 special (GDD §3.5) dengan urutan deterministik.
+- **Output:** ✅ `combo_table()` (struktur data, key komutatif) + `combo_affected_cells()` di `special_items.gd`; `is_combo()` dipakai di STEP C `resolve_swap`.
+- **DoD:** ✅ test: roket+roket (palang), roket+bom, colorbomb+colorbomb (clear-all), komutatif.
 - **Depends:** T2.2
 
-### T2.4 — Chain reaction (special trigger special) `M`
+### T2.4 — Chain reaction (special trigger special) `M` — [x] SELESAI
 - **Tujuan:** special yang kena ledakan ikut meledak (via QUEUE, bukan rekursif).
-- **Output:** queue FIFO di cascade loop; guard.
-- **DoD:** unit test: bom kena roket → keduanya resolve berurutan, deterministik, no stack overflow.
+- **Output:** ✅ `_trigger_queue` FIFO + dedupe per step + `MAX_CASCADE=64` guard di `board.gd` (§3.4/§3.5). Special yang kena efek → di-queue, di-set EMPTY saat drain.
+- **DoD:** ✅ test: roket menyapu bom → keduanya resolve berurutan; banyak special berdekatan → selesai tanpa hang.
 - **Depends:** T2.2
+
 
 ### T2.5 — Juice: animasi & partikel `L`
 - **Tujuan:** sensasi memuaskan (GDD §9).

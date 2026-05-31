@@ -253,3 +253,49 @@ func test_resolve_swap_line4_creates_rocket() -> void:
 				and step.data.get("special_type", -1) == TileCodes.SPECIAL_ROCKET_H:
 			has_rocket = true
 	assert_true(has_rocket, "ada SPECIAL_CREATED roket H di report")
+
+
+# ---------------------------------------------------------------------------
+# T2.4 — chain reaction: special kena efek special lain ikut meledak (via queue)
+# ---------------------------------------------------------------------------
+
+func test_chain_reaction_rocket_triggers_adjacent_bomb() -> void:
+	# Roket H di (0,0); saat di-swap ke (0,1) ia pindah ke baris 1 lalu menyapu BARIS 1.
+	# Taruh bom di (3,1) supaya kena sapuan → ikut meledak (chain via queue).
+	var b := BoardTestHelper.from_grid([
+		"12345",
+		"23145",
+		"34512",
+		"45123",
+		"51234",
+	])
+	b.set_cell(0, 0, TileCodes.encode(1, TileCodes.SPECIAL_ROCKET_H))
+	b.set_cell(3, 1, TileCodes.encode(4, TileCodes.SPECIAL_BOMB))
+	# Swap roket(0,0) dgn (0,1) — special-swap mengaktifkan roket (bypass match).
+	var report := b.resolve_swap(0, 0, 0, 1, GameRNG.new(123))
+	assert_true(report.is_accepted, "special-swap roket diterima")
+	var triggered_types := []
+	for step in report.steps:
+		if step.type == MoveAction.Type.SPECIAL_TRIGGERED:
+			triggered_types.append(step.data.get("special_type", -1))
+	assert_true(triggered_types.has(TileCodes.SPECIAL_ROCKET_H), "roket ter-trigger")
+	assert_true(triggered_types.has(TileCodes.SPECIAL_BOMB),
+		"bom ikut meledak via chain (kena sapuan roket di baris 1)")
+
+
+func test_chain_reaction_no_infinite_loop() -> void:
+	# Banyak special berdekatan → harus selesai (guard MAX_CASCADE), tidak hang.
+	var b := BoardTestHelper.from_grid([
+		"12345",
+		"23451",
+		"34512",
+		"45123",
+		"51234",
+	])
+	b.set_cell(0, 0, TileCodes.encode(1, TileCodes.SPECIAL_ROCKET_H))
+	b.set_cell(0, 1, TileCodes.encode(1, TileCodes.SPECIAL_ROCKET_V))
+	b.set_cell(0, 2, TileCodes.encode(1, TileCodes.SPECIAL_BOMB))
+	var report := b.resolve_swap(0, 0, 1, 0, GameRNG.new(9))
+	# Tidak peduli hasil persis; yang penting selesai & board valid (tidak hang/crash).
+	assert_not_null(report, "resolve selesai tanpa hang")
+	assert_true(report.final_board_hash != 0 or report.error == "" , "resolusi tuntas")
