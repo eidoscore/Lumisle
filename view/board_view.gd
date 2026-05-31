@@ -570,6 +570,9 @@ func _play_report(report: TurnReport) -> void:
 				await get_tree().create_timer(0.05).timeout
 			_:
 				_refresh_all()
+	# Sinkronkan state tampilan ke board final (PENTING: tanpa ini _disp basi →
+	# display & board diverge → tile yang user lihat beda dgn board sebenarnya).
+	_sync_disp_from_board()
 	_refresh_all()
 	_animating = false
 

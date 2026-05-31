@@ -27,6 +27,21 @@ func _ready() -> void:
 	GameState.is_game_active = true
 	_setup_level()
 	_update_hud()
+	_dbg_dump_board("INIT")
+
+
+## Dump state board ke logcat (ground-truth, untuk uji otomatis tanpa vision).
+func _dbg_dump_board(tag: String) -> void:
+	if _board == null:
+		return
+	var sym := {0:".",1:"R",2:"B",3:"G",4:"Y",5:"P",6:"O"}
+	var s := ""
+	for y in range(_board.height):
+		for x in range(_board.width):
+			var sp := _board.get_special(x, y)
+			s += ("*" if sp != 0 else sym.get(_board.get_color(x, y), "?"))
+		s += "/"
+	push_warning("LUMISLE_BOARD %s %s" % [tag, s])
 
 
 func _setup_level() -> void:
@@ -148,5 +163,6 @@ func consume_move() -> void:
 		_instruction_label.visible = false
 	_moves_left -= 1
 	_update_hud()
+	_dbg_dump_board("MOVE%d" % (MOVE_LIMIT - _moves_left))
 	if _moves_left <= 0 and not _objective.is_complete():
 		_finish(false)
