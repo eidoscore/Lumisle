@@ -27,6 +27,8 @@ var _mm: MultiMesh = null
 var _input_enabled := true
 var _selected := Vector2i(-1, -1)     # tile tersorot (mode tap-tap) / awal drag
 var _press_grid := Vector2i(-1, -1)   # tile tempat jari/mouse mulai menekan
+var _press_pos := Vector2.ZERO        # posisi pixel (lokal) saat mulai menekan
+var _drag_swapped := false            # sudah memicu swap dalam satu gesture drag
 var _move_rng: GameRNG = null
 var _highlight: Line2D = null         # outline tile terpilih (feedback jelas)
 var _animating := false               # true selagi animasi swap/bounce berjalan
@@ -36,6 +38,7 @@ var _hint_a: Line2D = null            # outline hint tile 1
 var _hint_b: Line2D = null            # outline hint tile 2
 var _hint_shown := false
 const HINT_DELAY := 2.5               # tampilkan hint setelah idle sekian detik
+const DRAG_THRESHOLD := 24.0          # px geser minimum untuk memicu swap berarah
 
 # Callback opsional: dipanggil tiap TILE_CLEARED untuk credit objektif (di-set GameScreen).
 var on_tiles_cleared: Callable = Callable()
@@ -219,17 +222,16 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		_use_touch = true
 		_clear_hint()
-		var grid := _grid_at(make_input_local(event).position)
+		var lp: Vector2 = make_input_local(event).position
 		if event.pressed:
-			_on_press(grid)
+			_on_press(lp)
 		else:
-			_on_release(grid)
+			_on_release(lp)
 		return
 	elif event is InputEventScreenDrag:
 		_use_touch = true
 		_clear_hint()
-		var grid := _grid_at(make_input_local(event).position)
-		_on_drag(grid)
+		_on_drag(make_input_local(event).position)
 		return
 
 	# --- Jalur MOUSE (desktop/editor) — diabaikan kalau sudah ada sentuhan native ---
@@ -237,15 +239,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		_clear_hint()
-		var mgrid := _grid_at(make_input_local(event).position)
+		var lpm: Vector2 = make_input_local(event).position
 		if event.pressed:
-			_on_press(mgrid)
+			_on_press(lpm)
 		else:
-			_on_release(mgrid)
+			_on_release(lpm)
 	elif event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0:
 		_clear_hint()
-		var dgrid := _grid_at(make_input_local(event).position)
-		_on_drag(dgrid)
+		_on_drag(make_input_local(event).position)
 
 
 ## Konversi posisi lokal → koordinat grid (atau (-1,-1) kalau di luar papan).
@@ -259,46 +260,60 @@ func _grid_at(local_pos: Vector2) -> Vector2i:
 	return Vector2i(gx, gy)
 
 
-func _on_press(grid: Vector2i) -> void:
+func _on_press(local_pos: Vector2) -> void:
+	var grid := _grid_at(local_pos)
 	if grid == Vector2i(-1, -1) or not board.is_playable(grid.x, grid.y):
 		_press_grid = Vector2i(-1, -1)
 		return
 	_press_grid = grid
+	_press_pos = local_pos
+	_drag_swapped = false
 	# Mode tap-tap: kalau sudah ada tile tersorot & ini tetangganya → swap.
 	if _selected != Vector2i(-1, -1) and _is_adjacent(_selected, grid):
 		var first := _selected
 		_set_selected(Vector2i(-1, -1))
-		_do_swap(first.x, first.y, grid.x, grid.y)
 		_press_grid = Vector2i(-1, -1)
+		_do_swap(first.x, first.y, grid.x, grid.y)
 	else:
-		# Sorot tile ini sebagai kandidat (untuk tap-tap & sebagai awal drag).
+		# Sorot tile ini sebagai kandidat (untuk tap-tap & sebagai awal drag/flick).
 		_set_selected(grid)
 
 
-## Selama drag: jika geser melewati batas ke tile tetangga, lakukan swap.
-func _on_drag(grid: Vector2i) -> void:
-	if _press_grid == Vector2i(-1, -1) or grid == Vector2i(-1, -1):
+## FLICK berarah: begitu jari bergeser melewati ambang dari titik tekan, tentukan
+## arah dominan (atas/bawah/kiri/kanan) lalu swap dengan tetangga di arah itu.
+## Ini jauh lebih toleran daripada "harus masuk sel tetangga" (dukung 4 arah merata).
+func _on_drag(local_pos: Vector2) -> void:
+	if _press_grid == Vector2i(-1, -1) or _drag_swapped:
 		return
-	if grid == _press_grid:
+	var d := local_pos - _press_pos
+	if d.length() < DRAG_THRESHOLD:
 		return
-	if _is_adjacent(_press_grid, grid) and board.is_playable(grid.x, grid.y):
-		var from := _press_grid
-		_press_grid = Vector2i(-1, -1)
-		_set_selected(Vector2i(-1, -1))
-		_do_swap(from.x, from.y, grid.x, grid.y)
-
-
-func _on_release(grid: Vector2i) -> void:
-	# Kalau lepas di tetangga tile awal (drag pelan tanpa memicu motion threshold) → swap.
-	if _press_grid != Vector2i(-1, -1) and grid != Vector2i(-1, -1) \
-			and _is_adjacent(_press_grid, grid) and board.is_playable(grid.x, grid.y):
-		var from := _press_grid
-		_press_grid = Vector2i(-1, -1)
-		_set_selected(Vector2i(-1, -1))
-		_do_swap(from.x, from.y, grid.x, grid.y)
+	# Arah dominan: horizontal vs vertikal.
+	var dir: Vector2i
+	if absf(d.x) >= absf(d.y):
+		dir = Vector2i(1, 0) if d.x > 0 else Vector2i(-1, 0)
+	else:
+		dir = Vector2i(0, 1) if d.y > 0 else Vector2i(0, -1)
+	var target := _press_grid + dir
+	if not board.is_playable(target.x, target.y):
 		return
-	# Lepas di tile yang sama = tap → biarkan tersorot untuk mode tap-tap.
+	var from := _press_grid
+	_drag_swapped = true
 	_press_grid = Vector2i(-1, -1)
+	_set_selected(Vector2i(-1, -1))
+	_do_swap(from.x, from.y, target.x, target.y)
+
+
+func _on_release(local_pos: Vector2) -> void:
+	# Lepas tanpa flick: kalau dilepas di tetangga tile awal, swap (drag pelan).
+	if not _drag_swapped and _press_grid != Vector2i(-1, -1):
+		var grid := _grid_at(local_pos)
+		if grid != Vector2i(-1, -1) and _is_adjacent(_press_grid, grid) and board.is_playable(grid.x, grid.y):
+			var from := _press_grid
+			_set_selected(Vector2i(-1, -1))
+			_do_swap(from.x, from.y, grid.x, grid.y)
+	_press_grid = Vector2i(-1, -1)
+	_drag_swapped = false
 
 
 func _is_adjacent(a: Vector2i, b: Vector2i) -> bool:
