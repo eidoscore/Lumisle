@@ -370,6 +370,15 @@ func _swap_creates_match(x1: int, y1: int, x2: int, y2: int) -> bool:
 	return has_match
 
 
+## PUBLIK (untuk view): apakah swap ini akan diterima (valid posisi + menghasilkan
+## match)? Tidak mengubah state. View pakai ini untuk memutuskan animasi slide
+## (valid) vs bounce (invalid) SEBELUM resolve_swap memutasi board.
+func swap_will_match(x1: int, y1: int, x2: int, y2: int) -> bool:
+	if not _is_valid_swap_positions(x1, y1, x2, y2):
+		return false
+	return _swap_creates_match(x1, y1, x2, y2)
+
+
 ## Acak ulang posisi tile (berseed). Pastikan no match instan & ada >=1 move (dok 14 §1 STEP E).
 ## Reshuffle GRATIS (D16). Mengumpulkan warna existing lalu menyebar ulang.
 func reshuffle(rng: GameRNG) -> void:

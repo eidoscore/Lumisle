@@ -1,13 +1,18 @@
 extends Node2D
-## BoardView (T1.11/T1.12) — render papan via MultiMeshInstance2D + replay TurnReport.
+## BoardView (T1.11/T1.12) — render papan via SATU node per tile (ColorRect).
 ## Logika ada di Board (RefCounted); view hanya menampilkan & menganimasikan.
-## Dok 04 §4, §14.2, §14.5. Tile placeholder = quad berwarna (art di T1.16/Fase 2).
+## Dok 04 §4, §14.2, §14.5. Tile placeholder = kotak berwarna (art di T1.16/Fase 2).
+##
+## CATATAN ARSITEKTUR (2026-06-01): dulu pakai MultiMeshInstance2D (1 draw call) tapi
+## sulit dianimasikan & sulit di-debug (tak ada node di tree), dan urutan animasi
+## salah (board dimutasi sebelum slide → warna stale). Untuk board 7×8 (56 tile),
+## per-tile node jauh lebih sederhana, feedback jelas, draw call tetap murah.
 
 signal level_won
 signal level_lost
 signal move_consumed
 
-const TILE_SIZE := 110          # px per tile (placeholder)
+const TILE_SIZE := 110          # px per sel (termasuk gap)
 const GAP := 6
 
 # 6 warna placeholder (palet sementara; final di T1.16). Index 1-6.
@@ -21,24 +26,27 @@ const COLOR_PALETTE := [
 	Color(0.95, 0.58, 0.30),   # 6 oranye
 ]
 
-var board: Board = null
-var _multimesh: MultiMeshInstance2D = null
-var _mm: MultiMesh = null
-var _input_enabled := true
-var _selected := Vector2i(-1, -1)     # tile tersorot (mode tap-tap) / awal drag
-var _press_grid := Vector2i(-1, -1)   # tile tempat jari/mouse mulai menekan
-var _press_pos := Vector2.ZERO        # posisi pixel (lokal) saat mulai menekan
-var _drag_swapped := false            # sudah memicu swap dalam satu gesture drag
-var _move_rng: GameRNG = null
-var _highlight: Line2D = null         # outline tile terpilih (feedback jelas)
-var _animating := false               # true selagi animasi swap/bounce berjalan
-var _use_touch := false               # latch: sekali ada sentuhan native, abaikan emulated mouse
-var _idle_time := 0.0                 # detik sejak interaksi terakhir (untuk hint)
-var _hint_a: Line2D = null            # outline hint tile 1
-var _hint_b: Line2D = null            # outline hint tile 2
-var _hint_shown := false
 const HINT_DELAY := 0.5               # tampilkan hint cepat setelah board diam
 const DRAG_THRESHOLD := 24.0          # px geser minimum untuk memicu swap berarah
+
+var board: Board = null
+var _move_rng: GameRNG = null
+var _tiles: Array = []                # ColorRect per cell, index = board.idx(x,y)
+var _tiles_root: Node2D = null
+
+var _input_enabled := true
+var _animating := false
+var _selected := Vector2i(-1, -1)     # tile tersorot (tap-tap) / awal drag
+var _press_grid := Vector2i(-1, -1)   # tile tempat jari mulai menekan
+var _press_pos := Vector2.ZERO        # posisi pixel lokal saat mulai menekan
+var _drag_swapped := false            # sudah memicu swap dalam satu gesture
+var _use_touch := false               # latch: kalau ada sentuhan native, abaikan emulated mouse
+
+var _highlight: Panel = null          # outline tile terpilih
+var _hint_a: Panel = null
+var _hint_b: Panel = null
+var _hint_shown := false
+var _idle_time := 0.0
 
 # Callback opsional: dipanggil tiap TILE_CLEARED untuk credit objektif (di-set GameScreen).
 var on_tiles_cleared: Callable = Callable()
@@ -47,113 +55,131 @@ var on_tiles_cleared: Callable = Callable()
 func setup_board(p_board: Board, move_rng: GameRNG) -> void:
 	board = p_board
 	_move_rng = move_rng
-	_build_multimesh()
+	_build_tiles()
 	_build_overlay()
 	_refresh_all()
 
 
-func _build_multimesh() -> void:
-	if _multimesh != null:
-		_multimesh.queue_free()
-	_multimesh = MultiMeshInstance2D.new()
-	_mm = MultiMesh.new()
-	_mm.transform_format = MultiMesh.TRANSFORM_2D
-	_mm.use_colors = true
-	# Mesh quad ukuran tile.
-	var quad := QuadMesh.new()
-	quad.size = Vector2(TILE_SIZE - GAP, TILE_SIZE - GAP)
-	_mm.mesh = quad
-	_mm.instance_count = board.width * board.height
-	_multimesh.multimesh = _mm
-	add_child(_multimesh)
+# ---------------------------------------------------------------------------
+# Build per-tile nodes
+# ---------------------------------------------------------------------------
 
-
-## Overlay outline untuk tile terpilih — feedback yang jelas terbaca di placeholder.
-func _build_overlay() -> void:
-	if _highlight != null and is_instance_valid(_highlight):
-		_highlight.queue_free()
-	_highlight = Line2D.new()
-	_highlight.width = 6.0
-	_highlight.default_color = Color(1, 1, 1, 0.95)
-	_highlight.closed = true
-	_highlight.z_index = 10
-	_highlight.visible = false
-	var half := (TILE_SIZE - GAP) * 0.5
-	_highlight.points = PackedVector2Array([
-		Vector2(-half, -half), Vector2(half, -half),
-		Vector2(half, half), Vector2(-half, half),
-	])
-	add_child(_highlight)
-	# Dua outline hint (kuning) untuk menunjukkan satu langkah valid saat idle.
-	_hint_a = _make_outline(Color(1, 0.9, 0.2, 0.95))
-	_hint_b = _make_outline(Color(1, 0.9, 0.2, 0.95))
-
-
-## Buat satu outline kotak (Line2D) seukuran tile, awalnya tak terlihat.
-func _make_outline(col: Color) -> Line2D:
-	var ln := Line2D.new()
-	ln.width = 6.0
-	ln.default_color = col
-	ln.closed = true
-	ln.z_index = 9
-	ln.visible = false
-	var half := (TILE_SIZE - GAP) * 0.5
-	ln.points = PackedVector2Array([
-		Vector2(-half, -half), Vector2(half, -half),
-		Vector2(half, half), Vector2(-half, half),
-	])
-	add_child(ln)
-	return ln
-
-
-## Tampilkan/sembunyikan outline pada tile grid (atau sembunyikan kalau (-1,-1)).
-func _update_highlight() -> void:
-	if _highlight == null:
-		return
-	if _selected == Vector2i(-1, -1):
-		_highlight.visible = false
-	else:
-		_highlight.visible = true
-		_highlight.position = _tile_pos(_selected.x, _selected.y)
-
-
-## Render semua tile dari state board (1 draw call via MultiMesh).
-func _refresh_all() -> void:
-	if board == null or _mm == null:
-		return
+func _build_tiles() -> void:
+	if _tiles_root != null and is_instance_valid(_tiles_root):
+		_tiles_root.queue_free()
+	_tiles_root = Node2D.new()
+	add_child(_tiles_root)
+	_tiles.clear()
+	_tiles.resize(board.width * board.height)
+	var vis := float(TILE_SIZE - GAP)
 	for y in range(board.height):
 		for x in range(board.width):
-			var i := board.idx(x, y)
-			_mm.set_instance_transform_2d(i, Transform2D(0.0, _tile_pos(x, y)))
-			_mm.set_instance_color(i, _color_for(x, y))
+			var rect := ColorRect.new()
+			rect.size = Vector2(vis, vis)
+			rect.pivot_offset = Vector2(vis, vis) * 0.5
+			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_tiles_root.add_child(rect)
+			_tiles[board.idx(x, y)] = rect
+	_layout_tiles()
 
 
-func _color_for(x: int, y: int) -> Color:
-	if not board.is_playable(x, y):
-		return Color(0, 0, 0, 0)   # transparan untuk non-playable
-	if board.cell_blocks_movement(x, y):
-		return Color(0.5, 0.4, 0.3)   # crate placeholder (coklat)
-	var c := board.get_color(x, y)
-	if c == TileCodes.EMPTY:
-		return Color(0, 0, 0, 0.12)
-	var col: Color = COLOR_PALETTE[c] if c < COLOR_PALETTE.size() else Color.WHITE
-	# Tandai special dengan lebih terang (placeholder, detail visual Fase 2).
-	if board.get_special(x, y) != TileCodes.SPECIAL_NONE:
-		col = col.lightened(0.35)
-	# Sorot tile terpilih (feedback tap-tap; placeholder sampai juice Fase 2).
-	if _selected == Vector2i(x, y):
-		col = col.lightened(0.5)
-	return col
+func _layout_tiles() -> void:
+	for y in range(board.height):
+		for x in range(board.width):
+			var rect: ColorRect = _tiles[board.idx(x, y)]
+			rect.position = _tile_topleft(x, y)
+			rect.scale = Vector2.ONE
+			rect.pivot_offset = rect.size * 0.5
 
 
-func _tile_pos(x: int, y: int) -> Vector2:
+## Posisi sudut kiri-atas ColorRect untuk sel (x,y).
+func _tile_topleft(x: int, y: int) -> Vector2:
+	return Vector2(x * TILE_SIZE + GAP * 0.5, y * TILE_SIZE + GAP * 0.5)
+
+
+## Pusat sel (x,y) — untuk overlay & hint.
+func _tile_center(x: int, y: int) -> Vector2:
 	return Vector2(x * TILE_SIZE + TILE_SIZE * 0.5, y * TILE_SIZE + TILE_SIZE * 0.5)
 
 
 # ---------------------------------------------------------------------------
-# Idle hint (dibawa maju dari T2.7, versi minimal) — setelah idle beberapa detik,
-# tunjukkan SATU langkah valid (2 tile) supaya pemain tahu swap mana yang "bisa".
-# Ini krusial di Fase 1 karena tile masih placeholder (sulit baca match by eye).
+# Overlay (highlight + hint) — Panel kotak transparan dengan border.
+# ---------------------------------------------------------------------------
+
+func _build_overlay() -> void:
+	_highlight = _make_outline(Color(1, 1, 1, 0.95))
+	_highlight.z_index = 10
+	_hint_a = _make_outline(Color(1, 0.9, 0.2, 0.95))
+	_hint_b = _make_outline(Color(1, 0.9, 0.2, 0.95))
+
+
+func _make_outline(col: Color) -> Panel:
+	var p := Panel.new()
+	var sz := float(TILE_SIZE - GAP)
+	p.size = Vector2(sz, sz)
+	p.pivot_offset = Vector2(sz, sz) * 0.5
+	p.z_index = 9
+	p.visible = false
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0, 0, 0, 0)
+	sb.border_color = col
+	sb.set_border_width_all(6)
+	sb.set_corner_radius_all(6)
+	p.add_theme_stylebox_override("panel", sb)
+	add_child(p)
+	return p
+
+
+func _place_outline(p: Panel, grid: Vector2i) -> void:
+	if p == null:
+		return
+	if grid == Vector2i(-1, -1):
+		p.visible = false
+		return
+	p.position = _tile_topleft(grid.x, grid.y)
+	p.visible = true
+
+
+# ---------------------------------------------------------------------------
+# Render
+# ---------------------------------------------------------------------------
+
+func _refresh_all() -> void:
+	if board == null:
+		return
+	for y in range(board.height):
+		for x in range(board.width):
+			_refresh_tile(x, y)
+
+
+func _refresh_tile(x: int, y: int) -> void:
+	var rect: ColorRect = _tiles[board.idx(x, y)]
+	if rect == null:
+		return
+	rect.position = _tile_topleft(x, y)
+	rect.scale = Vector2.ONE
+	rect.modulate = Color.WHITE
+	rect.color = _color_for(x, y)
+	rect.visible = rect.color.a > 0.0
+
+
+func _color_for(x: int, y: int) -> Color:
+	if not board.is_playable(x, y):
+		return Color(0, 0, 0, 0)
+	if board.cell_blocks_movement(x, y):
+		return Color(0.5, 0.4, 0.3)
+	var c := board.get_color(x, y)
+	if c == TileCodes.EMPTY:
+		return Color(0, 0, 0, 0.12)
+	var col: Color = COLOR_PALETTE[c] if c < COLOR_PALETTE.size() else Color.WHITE
+	if board.get_special(x, y) != TileCodes.SPECIAL_NONE:
+		col = col.lightened(0.35)
+	return col
+
+
+# ---------------------------------------------------------------------------
+# Idle hint — tampilkan SATU langkah valid agar pemain tahu swap mana yang bisa.
 # ---------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
@@ -173,17 +199,14 @@ func _show_hint() -> void:
 	var mv = moves[0]
 	var a: Vector2i = mv["a"]
 	var b: Vector2i = mv["b"]
-	_hint_a.position = _tile_pos(a.x, a.y)
-	_hint_b.position = _tile_pos(b.x, b.y)
-	_hint_a.visible = true
-	_hint_b.visible = true
+	_place_outline(_hint_a, a)
+	_place_outline(_hint_b, b)
 	_hint_shown = true
-	# Kedip lembut untuk menarik perhatian.
 	var t := create_tween().set_loops()
-	t.tween_property(_hint_a, "modulate:a", 0.25, 0.5)
-	t.parallel().tween_property(_hint_b, "modulate:a", 0.25, 0.5)
-	t.tween_property(_hint_a, "modulate:a", 1.0, 0.5)
-	t.parallel().tween_property(_hint_b, "modulate:a", 1.0, 0.5)
+	t.tween_property(_hint_a, "modulate:a", 0.2, 0.45)
+	t.parallel().tween_property(_hint_b, "modulate:a", 0.2, 0.45)
+	t.tween_property(_hint_a, "modulate:a", 1.0, 0.45)
+	t.parallel().tween_property(_hint_b, "modulate:a", 1.0, 0.45)
 	_hint_a.set_meta("tween", t)
 
 
@@ -203,28 +226,19 @@ func _clear_hint() -> void:
 		_hint_b.modulate.a = 1.0
 
 
-## Reset timer idle TANPA menyembunyikan hint (hint tetap terlihat selagi pemain
-## mengatur langkah). Hint baru dihitung ulang hanya setelah swap selesai.
+## Reset timer idle TANPA menyembunyikan hint (hint tetap terlihat selagi menimbang).
 func _touch_activity() -> void:
 	_idle_time = 0.0
 
 
 # ---------------------------------------------------------------------------
-# Input (T1.12) — DUA gestur didukung:
-#   1) DRAG: tekan satu tile → geser ke tetangga → lepas = swap (gestur utama match-3).
-#   2) TAP-TAP: tap satu tile (tersorot) → tap tetangga = swap.
-#
-# PENTING: jari ASLI di Android menghasilkan InputEventScreenTouch / ScreenDrag
-# (BUKAN selalu mouse-emulasi dengan button_mask). Maka kita tangani event TOUCH
-# native langsung, dan mouse hanya sebagai fallback desktop (editor). Latch _use_touch
-# mencegah dobel-proses dari emulated mouse begitu sentuhan native terdeteksi.
+# Input — flick berarah (4 arah) + tap-tap. Tangani touch native; mouse = fallback.
 # ---------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not _input_enabled or _animating or board == null:
 		return
 
-	# --- Jalur TOUCH native (Android / layar sentuh) ---
 	if event is InputEventScreenTouch:
 		_use_touch = true
 		_touch_activity()
@@ -240,7 +254,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		_on_drag(make_input_local(event).position)
 		return
 
-	# --- Jalur MOUSE (desktop/editor) — diabaikan kalau sudah ada sentuhan native ---
 	if _use_touch:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -255,7 +268,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		_on_drag(make_input_local(event).position)
 
 
-## Konversi posisi lokal → koordinat grid (atau (-1,-1) kalau di luar papan).
 func _grid_at(local_pos: Vector2) -> Vector2i:
 	if local_pos.x < 0 or local_pos.y < 0:
 		return Vector2i(-1, -1)
@@ -274,27 +286,21 @@ func _on_press(local_pos: Vector2) -> void:
 	_press_grid = grid
 	_press_pos = local_pos
 	_drag_swapped = false
-	# Mode tap-tap: kalau sudah ada tile tersorot & ini tetangganya → swap.
 	if _selected != Vector2i(-1, -1) and _is_adjacent(_selected, grid):
 		var first := _selected
 		_set_selected(Vector2i(-1, -1))
 		_press_grid = Vector2i(-1, -1)
 		_do_swap(first.x, first.y, grid.x, grid.y)
 	else:
-		# Sorot tile ini sebagai kandidat (untuk tap-tap & sebagai awal drag/flick).
 		_set_selected(grid)
 
 
-## FLICK berarah: begitu jari bergeser melewati ambang dari titik tekan, tentukan
-## arah dominan (atas/bawah/kiri/kanan) lalu swap dengan tetangga di arah itu.
-## Ini jauh lebih toleran daripada "harus masuk sel tetangga" (dukung 4 arah merata).
 func _on_drag(local_pos: Vector2) -> void:
 	if _press_grid == Vector2i(-1, -1) or _drag_swapped:
 		return
 	var d := local_pos - _press_pos
 	if d.length() < DRAG_THRESHOLD:
 		return
-	# Arah dominan: horizontal vs vertikal.
 	var dir: Vector2i
 	if absf(d.x) >= absf(d.y):
 		dir = Vector2i(1, 0) if d.x > 0 else Vector2i(-1, 0)
@@ -311,7 +317,6 @@ func _on_drag(local_pos: Vector2) -> void:
 
 
 func _on_release(local_pos: Vector2) -> void:
-	# Lepas tanpa flick: kalau dilepas di tetangga tile awal, swap (drag pelan).
 	if not _drag_swapped and _press_grid != Vector2i(-1, -1):
 		var grid := _grid_at(local_pos)
 		if grid != Vector2i(-1, -1) and _is_adjacent(_press_grid, grid) and board.is_playable(grid.x, grid.y):
@@ -326,132 +331,100 @@ func _is_adjacent(a: Vector2i, b: Vector2i) -> bool:
 	return absi(a.x - b.x) + absi(a.y - b.y) == 1
 
 
-## Set tile tersorot & perbarui outline highlight.
 func _set_selected(grid: Vector2i) -> void:
 	if _selected == grid:
 		return
 	_selected = grid
-	_update_highlight()
-	_refresh_all()
+	_place_outline(_highlight, grid)
 
+
+# ---------------------------------------------------------------------------
+# Swap flow — URUTAN BENAR (saran DeepSeek):
+#   1) validasi TANPA mutasi (swap_will_match)
+#   2) animasi slide (state board masih lama → warna benar) ATAU bounce
+#   3) BARU resolve_swap (mutasi board)
+#   4) replay cascade (pop clear, gravity, refill)
+# ---------------------------------------------------------------------------
 
 func _do_swap(x1: int, y1: int, x2: int, y2: int) -> void:
 	_set_selected(Vector2i(-1, -1))
 	if _animating:
 		return
-	# Cek dulu hasilnya TANPA mengubah board (resolve_swap akan mengubah kalau valid).
-	# Kita jalankan resolve_swap; kalau ditolak, mainkan bounce; kalau diterima, slide.
-	var report := board.resolve_swap(x1, y1, x2, y2, _move_rng)
-	if not report.is_accepted:
-		# Swap invalid (mis. warna sama / tak bikin match) → animasi bounce supaya
-		# jelas "ditolak", bukan terasa mati. Board tak berubah → hint lama masih valid.
-		await _play_invalid_bounce(x1, y1, x2, y2)
-		_idle_time = 0.0   # biar hint muncul lagi cepat
+
+	var will_match := board.swap_will_match(x1, y1, x2, y2)
+
+	if not will_match:
+		# Slide ke tetangga lalu balik — jelas "ditolak", warna tetap benar (board tak berubah).
+		await _anim_swap_visual(x1, y1, x2, y2)
+		await _anim_swap_visual(x2, y2, x1, y1)
+		_refresh_all()
+		_idle_time = 0.0
 		return
+
 	_input_enabled = false
-	move_consumed.emit()   # giliran valid → kurangi langkah (GameScreen)
-	# Board berubah → hint lama tak relevan, sembunyikan; dihitung ulang oleh _process.
 	_clear_hint()
-	# Animasi slide tukar posisi dulu (juice ringan Fase 1), lalu replay hasil.
-	await _play_swap_slide(x1, y1, x2, y2)
+	# 1) Animasi slide kedua tile bertukar (board masih state lama → warna benar).
+	await _anim_swap_visual(x1, y1, x2, y2)
+	# 2) Mutasi board + dapatkan replay log.
+	var report := board.resolve_swap(x1, y1, x2, y2, _move_rng)
+	move_consumed.emit()
+	# 3) Sinkronkan grid ke state pasca-swap, lalu replay cascade.
+	_refresh_all()
 	await _play_report(report)
 	_input_enabled = true
 	_idle_time = 0.0
-	_clear_hint()   # reset timer hint setelah giliran selesai
+	_clear_hint()
 
 
-## Animasi tukar dua tile (valid) — geser visual sebelum board di-refresh penuh.
-func _play_swap_slide(x1: int, y1: int, x2: int, y2: int) -> void:
+## Animasi 2 tile bertukar posisi secara visual (geser node). TIDAK mengubah board.
+## Setelah selesai, posisi node dikembalikan ke grid masing-masing (caller refresh).
+func _anim_swap_visual(x1: int, y1: int, x2: int, y2: int) -> void:
 	_animating = true
-	var i1 := board.idx(x1, y1)
-	var i2 := board.idx(x2, y2)
-	var p1 := _tile_pos(x1, y1)
-	var p2 := _tile_pos(x2, y2)
+	var r1: ColorRect = _tiles[board.idx(x1, y1)]
+	var r2: ColorRect = _tiles[board.idx(x2, y2)]
+	var p1 := _tile_topleft(x1, y1)
+	var p2 := _tile_topleft(x2, y2)
 	var t := create_tween().set_parallel(true)
-	t.tween_method(func(p): _mm.set_instance_transform_2d(i1, Transform2D(0.0, p)), p1, p2, 0.12)
-	t.tween_method(func(p): _mm.set_instance_transform_2d(i2, Transform2D(0.0, p)), p2, p1, 0.12)
+	t.tween_property(r1, "position", p2, 0.12).set_trans(Tween.TRANS_QUAD)
+	t.tween_property(r2, "position", p1, 0.12).set_trans(Tween.TRANS_QUAD)
 	await t.finished
+	# Kembalikan posisi node (data board yang otoritatif; caller akan _refresh_all).
+	r1.position = p1
+	r2.position = p2
 	_animating = false
 
 
-## Animasi bounce untuk swap invalid — geser sebagian lalu balik, beri rasa "ditolak".
-func _play_invalid_bounce(x1: int, y1: int, x2: int, y2: int) -> void:
-	_animating = true
-	var i1 := board.idx(x1, y1)
-	var i2 := board.idx(x2, y2)
-	var p1 := _tile_pos(x1, y1)
-	var p2 := _tile_pos(x2, y2)
-	var mid1 := p1.lerp(p2, 0.4)
-	var mid2 := p2.lerp(p1, 0.4)
-	var t := create_tween().set_parallel(true)
-	t.tween_method(func(p): _mm.set_instance_transform_2d(i1, Transform2D(0.0, p)), p1, mid1, 0.09)
-	t.tween_method(func(p): _mm.set_instance_transform_2d(i2, Transform2D(0.0, p)), p2, mid2, 0.09)
-	await t.finished
-	var t2 := create_tween().set_parallel(true)
-	t2.tween_method(func(p): _mm.set_instance_transform_2d(i1, Transform2D(0.0, p)), mid1, p1, 0.09)
-	t2.tween_method(func(p): _mm.set_instance_transform_2d(i2, Transform2D(0.0, p)), mid2, p2, 0.09)
-	await t2.finished
-	_animating = false
-	_refresh_all()
-
-
-## Replay TurnReport dengan animasi yang TERLIHAT (Fase 1 sederhana):
-## - TILE_CLEARED: tampilkan "pop" (quad mengecil+memudar) di tiap sel yang hilang,
-##   supaya jelas tile match LENYAP (bukan cuma ganti warna seketika).
-## - lalu refresh board (gravity/refill) per langkah.
-## Juice penuh (partikel, shake) = Fase 2 (T2.5).
+## Replay TurnReport: animasikan clear (pop), gravity & refill (tile turun).
 func _play_report(report: TurnReport) -> void:
+	_animating = true
 	for step in report.steps:
 		match step.type:
 			MoveAction.Type.TILE_CLEARED:
 				if on_tiles_cleared.is_valid():
 					on_tiles_cleared.call(step)
-				# Board sudah dikosongkan core; mainkan pop di posisi yang hilang.
-				await _play_clear_pop(step)
+				await _anim_clear_pop(step)
 				_refresh_all()
 			MoveAction.Type.TILE_FELL, MoveAction.Type.TILE_SPAWNED:
 				_refresh_all()
-				await get_tree().create_timer(0.06).timeout
-			MoveAction.Type.SWAP:
-				_refresh_all()
+				await get_tree().create_timer(0.05).timeout
 			_:
 				_refresh_all()
 	_refresh_all()
+	_animating = false
 
 
-## Animasi "pop" untuk tile yang di-clear: quad warna asli, scale 1→0 + fade.
-func _play_clear_pop(step) -> void:
+## Pop tile yang di-clear: kecilkan + fade ColorRect-nya, lalu refresh balikin.
+func _anim_clear_pop(step) -> void:
 	var positions: Array = step.positions
-	var colors: Array = step.data.get("colors", [])
 	if positions.is_empty():
 		return
-	_animating = true
-	var pops: Array[Polygon2D] = []
-	var size := float(TILE_SIZE - GAP)
-	var half := size * 0.5
-	var base_pts := PackedVector2Array([
-		Vector2(-half, -half), Vector2(half, -half),
-		Vector2(half, half), Vector2(-half, half),
-	])
-	for k in range(positions.size()):
-		var pos: Vector2i = positions[k]
-		var col := Color.WHITE
-		if k < colors.size():
-			var ci := int(colors[k])
-			col = COLOR_PALETTE[ci] if ci < COLOR_PALETTE.size() else Color.WHITE
-		var poly := Polygon2D.new()
-		poly.polygon = base_pts
-		poly.color = col
-		poly.position = _tile_pos(pos.x, pos.y)
-		poly.z_index = 8
-		add_child(poly)
-		pops.append(poly)
-	# Tween paralel: scale mengecil + fade out.
 	var t := create_tween().set_parallel(true)
-	for poly in pops:
-		t.tween_property(poly, "scale", Vector2(0.1, 0.1), 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
-		t.tween_property(poly, "modulate:a", 0.0, 0.16)
+	for pos in positions:
+		var p: Vector2i = pos
+		var rect: ColorRect = _tiles[board.idx(p.x, p.y)]
+		if rect == null:
+			continue
+		rect.pivot_offset = rect.size * 0.5
+		t.tween_property(rect, "scale", Vector2(0.1, 0.1), 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+		t.parallel().tween_property(rect, "modulate:a", 0.0, 0.16)
 	await t.finished
-	for poly in pops:
-		poly.queue_free()
-	_animating = false

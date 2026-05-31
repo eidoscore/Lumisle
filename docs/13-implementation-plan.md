@@ -129,6 +129,8 @@
 >
 > **CATATAN DEV (debug device, update):** logcat Xiaomi dibanjiri `CWB_ALS` → pesan kita cepat ter-rotate. Solusi: `adb logcat -G 16M` lalu capture KONTINU ke file (background process) sebelum user interaksi, baru baca file. `print()` tetap tak muncul; pakai `push_warning`.
 >
+> **REWRITE VIEW: MultiMesh → per-tile node (2026-06-01, dari analisa DeepSeek):** Setelah banyak ronde "drag gak ngefek", review eksternal (DeepSeek) menyimpulkan 2 hal: (1) urutan animasi LAMA salah — `resolve_swap()` MEMUTASI board (clear+gravity+refill) DULU, baru `_play_swap_slide()` menggeser instance MultiMesh, sehingga tile yang digeser memakai warna STALE (state lama) lalu papan "lompat" ke state final → terasa seperti tak ada perubahan; (2) MultiMesh overkill untuk board 7×8 (56 tile) dan menyulitkan animasi+debug (tak ada node di tree). PERBAIKAN: `board_view.gd` ditulis ulang pakai **satu `ColorRect` per tile** + urutan animasi BENAR: `swap_will_match()` (cek tanpa mutasi, ditambah di `board.gd`) → animasi slide (warna benar, board belum berubah) → `resolve_swap()` (mutasi) → `_refresh_all()` + replay cascade (pop clear). Highlight/hint pakai `Panel` border. Diverifikasi di HP: render OK (8 bucket warna), swap valid board Δ3.9% + langkah turun, swap invalid bounce & Δ0% tanpa makan langkah. 63 test tetap lulus.
+>
 > **CATATAN DEV (penting):** Setiap menambah `class_name` baru, WAJIB jalankan `godot --headless --import` SEKALI sebelum test/jalankan, agar class ter-registrasi di cache global (kalau tidak: "Identifier not declared"/"does not extend GutTest").
 >
 > **CATATAN DEV (parser headless vs editor):** `var x := make_input_local(event).position` GAGAL di parser headless (tipe Variant tak ter-infer) walau editor diam. Selalu beri tipe eksplisit `var x: Vector2 = ...` untuk nilai dari method untyped.
@@ -201,9 +203,9 @@
 - **DoD:** ✅ semua fixture lulus. **Living artifact** — tambah saat special/combo/obstacle (Fase 2/4).
 - **Depends:** T1.7, T1.10
 
-### T1.11 — `BoardView` minimal + render MultiMesh `L` — [x] SELESAI
-- **Output:** ✅ `view/board_view.gd` (Node2D) + `MultiMeshInstance2D` (1 draw call, tile = quad berwarna placeholder, 6 palet), replay TurnReport per step, refresh via `set_instance_color`. Struktur GameScreen §14.2.
-- **DoD:** ✅ board render di HP; swap → animasi clear/gravity/refill berurutan; input dikunci saat replay.
+### T1.11 — `BoardView` minimal + render `L` — [x] SELESAI
+- **Output:** ✅ `view/board_view.gd` (Node2D) — **satu `ColorRect` per tile** (placeholder kotak warna, 6 palet), replay TurnReport per step, refresh via warna node. Struktur GameScreen §14.2. (Catatan: awalnya MultiMeshInstance2D 1-draw-call, tapi di-rewrite 2026-06-01 ke per-tile node demi animasi+feedback yang benar & mudah di-debug — lihat catatan REWRITE VIEW di atas. Untuk 56 tile, biaya draw call tetap murah.)
+- **DoD:** ✅ board render di HP; swap → animasi slide→clear/gravity/refill berurutan (urutan benar: validasi→slide→mutasi→replay); input dikunci saat replay.
 - **Depends:** T1.7, T0.8
 
 ### T1.12 — Input swap (drag/tap) `S` — [x] SELESAI
