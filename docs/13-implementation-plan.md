@@ -248,6 +248,13 @@
 - **DoD:** unit test: tiap pola match → special benar di posisi benar.
 - **Depends:** T1.7
 
+### T2.1b — Deteksi kotak 2×2 → Propeller (ruleset_version → 2) `M` — [ ] BARU (temuan playtest user)
+- **Tujuan:** kotak 2×2 sewarna jadi match VALID yang menghasilkan special Propeller (seperti Royal Match), bukan diabaikan. Menutup "bug" yang dilaporkan user di Fase 1 (2×2 ungu tidak hilang) — yang memang batas Fase 1 yang disengaja (dok 14 §9).
+- **Output:** tambah `MatchKind.SHAPE_SQUARE` di `match_detector.gd` + deteksi 2×2 (dok 14 §2.4, urutan: garis dihitung dulu, 2×2 yang tak beririsan garis → square). `swap_will_match`/`has_any_match` ikut mengembalikan true untuk 2×2 (kalau tidak → swap 2×2 murni ditolak). Propeller di `special_items.gd` + efek §3.1. Naikkan `ruleset_version` ke 2.
+- **DoD:** unit test (golden fixtures): (a) 2×2 murni → 1 Propeller di anchur benar, 4 cell clear; (b) 2×2 yang juga garis-4 → Roket (garis menang, §2.2); (c) blok 2×3 sewarna → ditangani jalur garis, tak dobel-propeller; (d) `swap_will_match` true untuk swap pembentuk 2×2 murni. Update `test_determinism` + `test_golden_fixtures`.
+- **Depends:** T2.1
+- **CATATAN:** ini mengubah kontrak aturan → WAJIB sinkron core+solver+view+test (dok 14 §2.4). Solver (Fase 5) harus pakai detektor yang sama.
+
 ### T2.2 — Aktivasi efek special `M`
 - **Tujuan:** efek saat special meledak (roket = baris/kolom, bom = area, colorbomb = 1 warna).
 - **Output:** logika area-of-effect di `special_items.gd`; integrasi ke cascade (queue/FIFO).

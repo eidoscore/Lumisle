@@ -156,15 +156,34 @@ while true:
 | 4 segaris (vertikal) | Roket vertikal |
 | 5 bentuk L atau T (dua garis berpotongan) | Bom |
 | 5 segaris lurus | Color Bomb |
-| (kotak 2x2 — opsional v1.x) | (TBD, default: tidak dipakai v1) |
+| **Kotak 2×2 sewarna (murni, bukan bagian garis)** | **Propeller** (lihat §2.4) — diimplementasi Fase 2 T2.1b |
 
 ### 2.2 Prioritas klasifikasi (kalau satu grup match ambigu)
-Color Bomb (5-lurus) > Bom (L/T) > Roket (4). Klasifikasi dihitung dari bentuk grup match terbesar yang melibatkan tile.
+Color Bomb (5-lurus) > Bom (L/T) > Roket (4) > **Propeller (kotak 2×2)** > Line-3 (no special).
+Klasifikasi dihitung dari bentuk grup match terbesar yang melibatkan tile. Artinya: kalau swap membentuk garis-4 SEKALIGUS kotak 2×2 (cell tumpang tindih), garis-4 menang → Roket (bukan Propeller). Propeller hanya muncul untuk kotak 2×2 yang TIDAK juga membentuk garis ≥3.
 
 ### 2.3 Posisi anchor special yang dibuat
 1. **Posisi tile yang digerakkan pemain** (salah satu dari `a`/`b`) jika tile itu bagian dari match → pakai itu.
 2. Jika bukan (mis. match dari cascade), fallback: **titik potong** (untuk L/T), atau **sel paling bawah lalu paling kiri** untuk match lurus.
 - Aturan fallback ini harus identik di core & solver.
+
+### 2.4 Kotak 2×2 → Propeller (dibakukan 2026-06-01, target Fase 2 — ruleset_version naik ke 2)
+> Latar: di Royal Match, 4 tile sewarna membentuk blok 2×2 itu **valid** tapi TIDAK langsung lenyap — ia menghasilkan special (di Royal Match disebut "shuriken/propeller"). Lumisle mengikuti pola ini.
+
+**Definisi deteksi (tambahan untuk `MatchDetector`, BUKAN pengganti deteksi garis):**
+- Sebuah **kotak 2×2** valid jika keempat cell `(x,y), (x+1,y), (x,y+1), (x+1,y+1)` semuanya playable, non-empty, dan **warna sama**.
+- Scan kiri→kanan lalu atas→bawah; untuk tiap anchor kiri-atas `(x,y)` dengan `x < width-1` dan `y < height-1`.
+- **Interaksi dengan deteksi garis (urutan WAJIB, deterministik):**
+  1. Hitung dulu semua **run garis ≥3** (logika existing) dan grup hasil merge-nya.
+  2. Untuk tiap kotak 2×2 kandidat: jika **ada minimal satu** dari 4 cell-nya yang sudah masuk grup garis ≥3 (warna sama) → kotak ini **diabaikan** (garis menang, sesuai prioritas §2.2; cell itu di-clear sebagai bagian garis / jadi special garis).
+  3. Kotak 2×2 yang **tidak** beririsan dengan garis ≥3 → jadi grup match `SHAPE_SQUARE` (kind baru) → buat **Propeller**.
+- **Anti-overlap antar kotak:** kalau dua kotak 2×2 sewarna saling tumpang tindih (mis. blok 2×3 sewarna = dua kotak 2×2), ambil **kotak paling kiri-atas** sebagai pemenang; cell sisanya ikut di-clear oleh kotak itu (union clear), JANGAN buat 2 propeller dari area yang sama. (Catatan: blok 2×3 / 3×3 sewarna umumnya sudah mengandung garis-3 → ditangani jalur garis lebih dulu di langkah 2. Aturan ini jaring pengaman saja.)
+
+**Anchor Propeller (§2.3 diperluas):** posisi tile yang digerakkan pemain kalau ia salah satu dari 4 cell; selain itu fallback = cell **kiri-atas** kotak 2×2.
+
+**Efek Propeller (lihat §3.1):** menargetkan 1 tile acak-berseed di papan + 3 cell tetangganya (atau target objektif terdekat) — detail di §3.1 saat T2.x. Untuk T2.1b cukup: spawn Propeller di anchor, 4 cell kotak (kecuali anchor) di-clear, sisanya seperti special lain.
+
+**Wajib diikuti SEMUA konsumen (core + solver + view + test):** karena `swap_will_match()` (dipakai view untuk validasi swap) memanggil `has_any_match`, deteksi 2×2 ini HARUS membuat `has_any_match`/`find_all` mengembalikan match juga — kalau tidak, swap yang membentuk 2×2 murni akan ditolak (rejected) padahal seharusnya valid. **Ini alasan utama 2×2 terasa seperti "bug" di Fase 1.**
 
 ---
 
@@ -177,6 +196,7 @@ Color Bomb (5-lurus) > Bom (L/T) > Roket (4). Klasifikasi dihitung dari bentuk g
 | Roket V | seluruh kolom special |
 | Bom | area 3x3 di sekitar special (atau radius r=1) |
 | Color Bomb | semua tile berwarna = warna target (warna tile yang di-swap; jika di-swap dgn special, lihat combo) |
+| Propeller (dari 2×2) | terbang ke 1 target (tile objektif terdekat; fallback: tile acak-berseed) lalu clear target + 4 tetangga ortogonal. Deterministik via `GameRNG` urutan index flat. Detail final = tuning T2.x. |
 
 ### 3.2 Combo special + special (di-swap berdampingan)
 | Combo | Efek |
@@ -271,9 +291,11 @@ Objektif di-kredit dari event semantik yang dihasilkan resolusi:
 ---
 
 ## 9. Hal yang SENGAJA belum dispesifikasi (v1)
-- Kotak 2x2 → special (opsional v1.x).
-- Propeller (special ke-4) — v1.x.
+- ~~Kotak 2x2 → special (opsional v1.x).~~ **SUDAH dibakukan §2.4 → Propeller (ruleset_version 2, implementasi Fase 2 T2.1b).**
+- Propeller (special ke-4) — **aturan dibakukan §2.4/§3.1; implementasi Fase 2.**
 - Multi-warna campur (color mixing) — kandidat signature mechanic, v2.
 - Gravity arah non-bawah — schema mendukung, tapi v1 hanya DOWN.
 
 > Tambahkan ke sini (dan naikkan `ruleset_version`) saat aturan baru dibakukan. Jangan biarkan aturan baru "tersirat" di kode tanpa masuk spec ini.
+>
+> **CATATAN ruleset_version:** Fase 1 = v1 (hanya garis 3+). Penambahan 2×2→Propeller (§2.4) = **v2**, AKTIF saat diimplementasi di Fase 2 (T2.1b). Sampai T2.1b selesai, engine masih jalan v1 (2×2 murni belum match) — ini perilaku Fase 1 yang DIHARAPKAN, bukan bug.
