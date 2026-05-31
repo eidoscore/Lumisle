@@ -37,7 +37,7 @@ var _idle_time := 0.0                 # detik sejak interaksi terakhir (untuk hi
 var _hint_a: Line2D = null            # outline hint tile 1
 var _hint_b: Line2D = null            # outline hint tile 2
 var _hint_shown := false
-const HINT_DELAY := 2.5               # tampilkan hint setelah idle sekian detik
+const HINT_DELAY := 0.5               # tampilkan hint cepat setelah board diam
 const DRAG_THRESHOLD := 24.0          # px geser minimum untuk memicu swap berarah
 
 # Callback opsional: dipanggil tiap TILE_CLEARED untuk credit objektif (di-set GameScreen).
@@ -203,6 +203,12 @@ func _clear_hint() -> void:
 		_hint_b.modulate.a = 1.0
 
 
+## Reset timer idle TANPA menyembunyikan hint (hint tetap terlihat selagi pemain
+## mengatur langkah). Hint baru dihitung ulang hanya setelah swap selesai.
+func _touch_activity() -> void:
+	_idle_time = 0.0
+
+
 # ---------------------------------------------------------------------------
 # Input (T1.12) — DUA gestur didukung:
 #   1) DRAG: tekan satu tile → geser ke tetangga → lepas = swap (gestur utama match-3).
@@ -221,7 +227,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	# --- Jalur TOUCH native (Android / layar sentuh) ---
 	if event is InputEventScreenTouch:
 		_use_touch = true
-		_clear_hint()
+		_touch_activity()
 		var lp: Vector2 = make_input_local(event).position
 		if event.pressed:
 			_on_press(lp)
@@ -230,7 +236,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	elif event is InputEventScreenDrag:
 		_use_touch = true
-		_clear_hint()
+		_touch_activity()
 		_on_drag(make_input_local(event).position)
 		return
 
@@ -238,14 +244,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _use_touch:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		_clear_hint()
+		_touch_activity()
 		var lpm: Vector2 = make_input_local(event).position
 		if event.pressed:
 			_on_press(lpm)
 		else:
 			_on_release(lpm)
 	elif event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0:
-		_clear_hint()
+		_touch_activity()
 		_on_drag(make_input_local(event).position)
 
 
@@ -338,15 +344,19 @@ func _do_swap(x1: int, y1: int, x2: int, y2: int) -> void:
 	var report := board.resolve_swap(x1, y1, x2, y2, _move_rng)
 	if not report.is_accepted:
 		# Swap invalid (mis. warna sama / tak bikin match) → animasi bounce supaya
-		# jelas "ditolak", bukan terasa mati.
+		# jelas "ditolak", bukan terasa mati. Board tak berubah → hint lama masih valid.
 		await _play_invalid_bounce(x1, y1, x2, y2)
+		_idle_time = 0.0   # biar hint muncul lagi cepat
 		return
 	_input_enabled = false
 	move_consumed.emit()   # giliran valid → kurangi langkah (GameScreen)
+	# Board berubah → hint lama tak relevan, sembunyikan; dihitung ulang oleh _process.
+	_clear_hint()
 	# Animasi slide tukar posisi dulu (juice ringan Fase 1), lalu replay hasil.
 	await _play_swap_slide(x1, y1, x2, y2)
 	await _play_report(report)
 	_input_enabled = true
+	_idle_time = 0.0
 	_clear_hint()   # reset timer hint setelah giliran selesai
 
 
