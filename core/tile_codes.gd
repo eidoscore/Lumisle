@@ -20,6 +20,7 @@ const SPECIAL_ROCKET_H := 1
 const SPECIAL_ROCKET_V := 2
 const SPECIAL_BOMB := 3
 const SPECIAL_COLORBOMB := 4
+const SPECIAL_PROPELLER := 5    # dari kotak 2×2 (dok 14 §2.4, ruleset v2)
 
 # --- Bit layout ---
 const _COLOR_MASK := 0x3F          # bit 0-5

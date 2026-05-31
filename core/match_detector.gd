@@ -9,21 +9,64 @@ enum MatchKind {
 	LINE_4,      # 4 segaris → roket (orientasi sesuai arah)
 	LINE_5,      # 5 segaris lurus → color bomb
 	SHAPE_LT,    # L/T (dua garis berpotongan) → bom
+	SHAPE_SQUARE, # kotak 2×2 sewarna (murni, bukan bagian garis) → propeller (dok 14 §2.4)
 }
 
 
 ## Cari semua match. Mengembalikan Array of Dictionary:
 ##   { "cells": Array[Vector2i], "kind": MatchKind, "orientation": "h"/"v"/"none", "color": int }
 ## Match yang berpotongan (H+V share cell) digabung jadi satu grup SHAPE_LT (dok 14 §2.1).
+## Kotak 2×2 sewarna yang TIDAK beririsan garis ≥3 → grup SHAPE_SQUARE (dok 14 §2.4).
 static func find_all(board: Board) -> Array:
 	var runs := _find_runs(board)        # semua run horizontal & vertikal >=3
-	if runs.is_empty():
-		return []
-	var groups := _merge_intersecting(runs)   # gabung run yang berbagi cell
+	var groups := _merge_intersecting(runs) if not runs.is_empty() else []
 	var result: Array = []
+	# Kumpulan cell yang sudah masuk grup garis (untuk prioritas garis > square §2.2).
+	var line_cells := {}
 	for g in groups:
-		result.append(_classify(g))
+		var classified := _classify(g)
+		result.append(classified)
+		for c in classified["cells"]:
+			line_cells[c] = true
+	# Deteksi kotak 2×2 yang tak beririsan garis (dok 14 §2.4).
+	for sq in _find_squares(board, line_cells):
+		result.append(sq)
 	return result
+
+
+## Cari kotak 2×2 sewarna yang TIDAK beririsan cell garis (line_cells).
+## Anti-overlap: kotak yang sudah "diklaim" cell-nya oleh kotak lebih kiri-atas di-skip.
+static func _find_squares(board: Board, line_cells: Dictionary) -> Array:
+	var squares: Array = []
+	var claimed := {}   # cell yang sudah jadi bagian kotak 2×2 sebelumnya
+	for y in range(board.height - 1):
+		for x in range(board.width - 1):
+			var c00 := Vector2i(x, y)
+			var c10 := Vector2i(x + 1, y)
+			var c01 := Vector2i(x, y + 1)
+			var c11 := Vector2i(x + 1, y + 1)
+			# Skip kalau ada cell yang sudah masuk garis atau sudah diklaim kotak lain.
+			if line_cells.has(c00) or line_cells.has(c10) or line_cells.has(c01) or line_cells.has(c11):
+				continue
+			if claimed.has(c00) or claimed.has(c10) or claimed.has(c01) or claimed.has(c11):
+				continue
+			if not (board.is_playable(x, y) and board.is_playable(x + 1, y) \
+					and board.is_playable(x, y + 1) and board.is_playable(x + 1, y + 1)):
+				continue
+			var col := board.get_color(x, y)
+			if col == TileCodes.EMPTY:
+				continue
+			if board.get_color(x + 1, y) != col or board.get_color(x, y + 1) != col \
+					or board.get_color(x + 1, y + 1) != col:
+				continue
+			# Kotak 2×2 valid (kiri-atas menang, §2.4).
+			var cells_arr: Array[Vector2i] = [c00, c10, c01, c11]
+			squares.append({"cells": cells_arr, "kind": MatchKind.SHAPE_SQUARE, "orientation": "none", "color": col})
+			claimed[c00] = true
+			claimed[c10] = true
+			claimed[c01] = true
+			claimed[c11] = true
+	return squares
 
 
 ## Cari semua "run" (deret >=3 sewarna) horizontal dan vertikal.
@@ -165,5 +208,9 @@ static func _classify(group: Array) -> Dictionary:
 
 
 ## Helper: apakah ada match sama sekali (untuk init no-match & validasi).
+## Termasuk kotak 2×2 (dok 14 §2.4) — penting agar swap pembentuk 2×2 murni
+## dianggap valid (swap_will_match) & init board bebas dari 2×2 juga.
 static func has_any_match(board: Board) -> bool:
-	return not _find_runs(board).is_empty()
+	if not _find_runs(board).is_empty():
+		return true
+	return not _find_squares(board, {}).is_empty()

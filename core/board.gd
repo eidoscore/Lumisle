@@ -99,6 +99,7 @@ func setup(p_width: int, p_height: int, p_color_subset: PackedInt32Array, rng: G
 
 	_apply_obstacles(p_obstacles)
 	_fill_no_initial_match()
+	# Hook special items (Fase 2) sudah default-aktif di deklarasi _special_create_fn.
 
 
 ## Konversi Format A obstacle → obstacle_layer (dok 14 §0.2). V1: maks 1 obstacle/cell.
@@ -133,7 +134,8 @@ func _fill_no_initial_match() -> void:
 			set_cell(x, y, TileCodes.encode(color))
 
 
-## Pilih warna yang tidak membuat 3-segaris dgn 2 tetangga kiri / 2 tetangga atas.
+## Pilih warna yang tidak membuat 3-segaris dgn 2 tetangga kiri / 2 tetangga atas,
+## DAN tidak membentuk kotak 2×2 sewarna dengan tetangga kiri/atas/kiri-atas (dok 14 §2.4).
 func _pick_safe_color(x: int, y: int) -> int:
 	var color := _rng.pick_packed(color_subset)
 	for attempt in range(32):
@@ -146,6 +148,12 @@ func _pick_safe_color(x: int, y: int) -> int:
 		# Cek atas: (y-1) & (y-2) sama warna.
 		if not bad and y >= 2 and is_playable(x, y - 1) and is_playable(x, y - 2):
 			if get_color(x, y - 1) == color and get_color(x, y - 2) == color:
+				bad = true
+		# Cek kotak 2×2: cell (x-1,y),(x,y-1),(x-1,y-1) semuanya == color.
+		if not bad and x >= 1 and y >= 1 \
+				and is_playable(x - 1, y) and is_playable(x, y - 1) and is_playable(x - 1, y - 1):
+			if get_color(x - 1, y) == color and get_color(x, y - 1) == color \
+					and get_color(x - 1, y - 1) == color:
 				bad = true
 		if not bad:
 			return color
@@ -170,13 +178,21 @@ func board_hash() -> int:
 # T1.9 — find_possible_moves + reshuffle
 # ---------------------------------------------------------------------------
 
-## Hook untuk special items (Fase 2). Di Fase 1 default null/no-op.
-## Diisi oleh SpecialItems di Fase 2 TANPA mengubah loop ini (T1.7 DoD: modular).
-## Signature direncanakan:
-##   _special_create_fn(matches) -> Array  (special yang dibuat)
-##   _special_trigger_fn(triggers) -> Dictionary (clear_mask tambahan + new_triggers)
-var _special_create_fn: Callable = Callable()
+## Hook untuk special items (Fase 2). Default = SpecialItems (selalu aktif sejak
+## deklarasi, agar board yang dibangun tanpa setup() — mis. test via from_grid —
+## tetap membuat special). Bisa di-override (mis. solver/test khusus).
+var _special_create_fn: Callable = Callable(SpecialItems, "create_specials_from_matches")
 var _special_trigger_fn: Callable = Callable()
+
+## Antrian special yang harus diaktifkan (FIFO, dok 14 §3.4). Diisi saat swap-special
+## atau saat special kena clear/efek special lain (chain reaction T2.4).
+var _trigger_queue: Array = []
+## Cell ekstra yang harus di-clear pada step cascade berikutnya (mis. hasil combo).
+var _pending_clear: Array = []
+## Anchor kandidat untuk special yang dibuat = 2 cell yang baru di-swap (dok 14 §2.3).
+var _swap_anchors: Array = []
+## Warna target untuk color bomb yang di-trigger (dari tile pasangan swap).
+var _colorbomb_target := -1
 
 
 ## STEP A-F (dok 14 §1). Mengembalikan TurnReport (replay log).
@@ -193,13 +209,41 @@ func resolve_swap(x1: int, y1: int, x2: int, y2: int, rng: GameRNG) -> TurnRepor
 	# Snapshot untuk rollback (T1.8) & swap-back (STEP C).
 	var snapshot := cells.duplicate()
 
+	# Special yang ada di kedua cell SEBELUM swap (untuk deteksi special-swap & combo).
+	var sp1 := get_special(x1, y1)
+	var sp2 := get_special(x2, y2)
+	var col1 := get_color(x1, y1)
+	var col2 := get_color(x2, y2)
+
 	# STEP B — Lakukan swap.
 	_swap_cells(x1, y1, x2, y2)
 
-	# STEP C — Apakah giliran valid? (Fase 1: hanya kriteria "menghasilkan match".)
-	# (Special-swap & combo = Fase 2, lewat hook.)
+	# Reset state per-giliran (anchor untuk special baru, queue, target colorbomb).
+	_swap_anchors = [Vector2i(x1, y1), Vector2i(x2, y2)]
+	_trigger_queue = []
+	_pending_clear = []
+	_colorbomb_target = -1
+
+	# STEP C — Apakah giliran valid? (dok 14 §C: match ATAU special-swap ATAU combo.)
 	var has_match := MatchDetector.has_any_match(self)
-	if not has_match:
+	var is_combo := SpecialItems.is_combo(sp1, sp2)
+	# Special-swap tunggal: salah satu cell special & yang lain tile biasa.
+	var single_special := false
+	var single_special_pos := Vector2i(-1, -1)
+	var single_special_type := TileCodes.SPECIAL_NONE
+	if not is_combo:
+		if sp1 != TileCodes.SPECIAL_NONE and sp2 == TileCodes.SPECIAL_NONE:
+			single_special = true
+			single_special_pos = Vector2i(x2, y2)   # setelah swap, special pindah ke (x2,y2)
+			single_special_type = sp1
+			_colorbomb_target = col2   # warna pasangan (untuk colorbomb)
+		elif sp2 != TileCodes.SPECIAL_NONE and sp1 == TileCodes.SPECIAL_NONE:
+			single_special = true
+			single_special_pos = Vector2i(x1, y1)
+			single_special_type = sp2
+			_colorbomb_target = col1
+
+	if not has_match and not is_combo and not single_special:
 		# Swap-back, rejected, tidak makan langkah (anti-frustrasi).
 		cells = snapshot
 		var r := TurnReport.rejected()
@@ -214,12 +258,24 @@ func resolve_swap(x1: int, y1: int, x2: int, y2: int, rng: GameRNG) -> TurnRepor
 		{"from": Vector2i(x1, y1), "to": Vector2i(x2, y2), "valid": true}
 	))
 
-	# STEP D — Loop cascade.
+	# Seed trigger queue dari swap-special / combo (dok 14 §C catatan: bypass match).
+	if is_combo:
+		# Combo special+special di posisi (x2,y2) (pivot = tile kedua).
+		report.add_step(MoveAction.make(
+			MoveAction.Type.COMBO_TRIGGERED, [],
+			{"special_a": sp1, "special_b": sp2, "pos": Vector2i(x2, y2)}
+		))
+		_apply_combo(Vector2i(x2, y2), sp1, sp2, report)
+	elif single_special:
+		_trigger_queue.append({"pos": single_special_pos, "type": single_special_type})
+
+	# STEP D — Loop cascade (match + trigger queue).
 	var cascade_index := 0
 	while cascade_index < MAX_CASCADE:
 		cascade_index += 1
 		var matches := MatchDetector.find_all(self)
-		if matches.is_empty():
+		var has_work := not _trigger_queue.is_empty() or not _pending_clear.is_empty()
+		if matches.is_empty() and not has_work:
 			break
 		_resolve_cascade_step(matches, cascade_index, report, rng)
 
@@ -241,52 +297,97 @@ func resolve_swap(x1: int, y1: int, x2: int, y2: int, rng: GameRNG) -> TurnRepor
 	return report
 
 
-## Satu gelombang cascade: clear match → gravity → refill (dok 14 §1 STEP D.3).
-## Fase 1: tanpa special (created/triggered = no-op via hook null).
+## Satu gelombang cascade (dok 14 §1 STEP D, §3.5 resolusi simultan):
+## 1) buat special dari matches (anchor = swap cell kalau bisa)
+## 2) drain trigger_queue → kumpulkan area efek special + chain (special kena efek → queue)
+## 3) clear_mask = union (match cells ∪ area efek special), KECUALI anchor special baru
+## 4) emit TileCleared, tempatkan special baru, gravity, refill
 func _resolve_cascade_step(matches: Array, cascade_index: int, report: TurnReport, rng: GameRNG) -> void:
-	# D.1 — special yang dibuat dari matches (Fase 2 via hook; Fase 1 kosong).
+	# D.1 — special yang dibuat dari matches (Fase 2 via hook).
 	var created: Array = []
 	if _special_create_fn.is_valid():
-		created = _special_create_fn.call(matches)
+		created = _special_create_fn.call(matches, _swap_anchors)
+	# Anchor swap hanya berlaku utk giliran pertama (cascade berikut = fallback).
+	_swap_anchors = []
 
-	# Posisi anchor created (dikecualikan dari clear, dok 14 §3.5 poin 3).
 	var created_positions := {}
 	for c in created:
 		created_positions[c["pos"]] = true
 
-	# D.2 — clear_mask = union semua cell match (sekali, dok 14 §3.5 poin 1).
+	# D.2a — clear dari MATCH (union sel match, kecuali anchor special baru).
 	var clear_set := {}
-	var cleared_colors: Array[int] = []
 	for m in matches:
 		for cpos in m["cells"]:
 			if created_positions.has(cpos):
-				continue  # special baru kebal clear di step ini
-			if not clear_set.has(cpos):
-				clear_set[cpos] = true
-				cleared_colors.append(get_color(int(cpos.x), int(cpos.y)))
+				continue  # special baru kebal clear di step ini (§3.5 poin 3)
+			clear_set[cpos] = true
 
-	# D.3 — emit TileCleared + hapus fisik.
+	# Pending clear dari combo (dok 14 §3.2): cell yang ditandai combo untuk dihapus.
+	for cpos in _pending_clear:
+		# Special yang kena combo → ikut chain (queue) sebelum di-clear.
+		var psp := get_special(int(cpos.x), int(cpos.y))
+		if psp != TileCodes.SPECIAL_NONE:
+			_trigger_queue.append({"pos": cpos, "type": psp})
+		else:
+			clear_set[cpos] = true
+	_pending_clear = []
+
+	# D.2b — drain trigger_queue: aktifkan special, kumpulkan area efek + chain (§3.4).
+	var triggered_events: Array = []   # untuk emit SPECIAL_TRIGGERED
+	var processed := {}                # dedupe per step (§3.4)
+	while not _trigger_queue.is_empty():
+		var trig: Dictionary = _trigger_queue.pop_front()
+		var tpos: Vector2i = trig["pos"]
+		if processed.has(tpos):
+			continue
+		processed[tpos] = true
+		var ttype: int = trig["type"]
+		# Special yang di-trigger langsung di-set EMPTY (§3.5 poin 4) sebelum hitung area.
+		set_cell(tpos.x, tpos.y, TileCodes.EMPTY)
+		var affected: Array = SpecialItems.affected_cells(self, tpos, ttype, _colorbomb_target)
+		triggered_events.append({"type": ttype, "pos": tpos, "affected": affected})
+		for ap in affected:
+			# Chain: kalau cell terdampak adalah special lain (belum diproses) → queue.
+			var asp := get_special(ap.x, ap.y)
+			if asp != TileCodes.SPECIAL_NONE and not processed.has(ap) and ap != tpos:
+				_trigger_queue.append({"pos": ap, "type": asp})
+			if not created_positions.has(ap):
+				clear_set[ap] = true
+
+	# Emit SPECIAL_TRIGGERED (sesudah area dihitung, sebelum clear fisik).
+	for ev in triggered_events:
+		var aff_arr: Array[Vector2i] = []
+		for a in ev["affected"]:
+			aff_arr.append(a)
+		report.add_step(MoveAction.make(
+			MoveAction.Type.SPECIAL_TRIGGERED, aff_arr,
+			{"special_type": ev["type"], "pos": ev["pos"], "affected": aff_arr}
+		))
+
+	# D.3 — emit TileCleared + hapus fisik (union sekali, §3.5 poin 1).
 	var cleared_positions: Array[Vector2i] = []
+	var cleared_colors: Array[int] = []
 	for cpos in clear_set:
+		var cc := get_color(int(cpos.x), int(cpos.y))
+		if cc == TileCodes.EMPTY:
+			continue   # sudah kosong (mis. special yang sudah di-EMPTY-kan) — jangan double
 		cleared_positions.append(cpos)
+		cleared_colors.append(cc)
 	if not cleared_positions.is_empty():
 		report.add_step(MoveAction.make(
 			MoveAction.Type.TILE_CLEARED, cleared_positions, {"colors": cleared_colors}
 		))
-		# Skor (dok 14 §6): base 20 per tile × faktor cascade (cascade_index+1).
 		report.score_delta_x2 += cleared_positions.size() * 20 * (cascade_index + 1)
 		for cpos in cleared_positions:
 			set_cell(int(cpos.x), int(cpos.y), TileCodes.EMPTY)
 
-	# Tempatkan special yang dibuat (Fase 2).
+	# Tempatkan special yang dibuat (warna ikut warna match agar colorbomb tahu target).
 	for c in created:
 		var cp: Vector2i = c["pos"]
 		set_cell(int(cp.x), int(cp.y), TileCodes.encode(0, c["special_type"]))
 		report.add_step(MoveAction.make(
 			MoveAction.Type.SPECIAL_CREATED, [], {"special_type": c["special_type"], "pos": cp}
 		))
-
-	# (Obstacle damage & objective credit = Fase 4; hook nanti.)
 
 	# Gravity → event TileFell.
 	var fall_events := Gravity.apply_gravity(self)
@@ -297,6 +398,12 @@ func _resolve_cascade_step(matches: Array, cascade_index: int, report: TurnRepor
 	var spawn_events := Gravity.apply_refill(self, rng)
 	for e in spawn_events:
 		report.add_step(e)
+
+
+## Terapkan combo special+special (dok 14 §3.2): tandai area efek untuk di-clear
+## pada step cascade pertama (lewat _pending_clear, masuk alur biasa).
+func _apply_combo(pivot: Vector2i, special_a: int, special_b: int, _report: TurnReport) -> void:
+	_pending_clear = SpecialItems.combo_affected_cells(self, pivot, special_a, special_b)
 
 
 # ---------------------------------------------------------------------------
