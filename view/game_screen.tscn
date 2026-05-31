@@ -16,27 +16,35 @@ script = ExtResource("2_boardview")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
+[node name="TitleLabel" type="Label" parent="HUD"]
+offset_left = 60.0
+offset_top = 60.0
+offset_right = 1020.0
+offset_bottom = 110.0
+theme_override_font_sizes/font_size = 38
+text = "Level 1"
+
 [node name="MovesLabel" type="Label" parent="HUD"]
 offset_left = 60.0
-offset_top = 120.0
+offset_top = 130.0
 offset_right = 520.0
-offset_bottom = 170.0
+offset_bottom = 180.0
 theme_override_font_sizes/font_size = 40
 text = "Langkah: 20"
 
 [node name="ObjectiveLabel" type="Label" parent="HUD"]
 offset_left = 60.0
-offset_top = 175.0
-offset_right = 900.0
-offset_bottom = 225.0
+offset_top = 185.0
+offset_right = 1020.0
+offset_bottom = 235.0
 theme_override_font_sizes/font_size = 36
-text = "Kumpulkan merah: 0/25"
+text = "Objektif: 0/25"
 
 [node name="InstructionLabel" type="Label" parent="HUD"]
 offset_left = 60.0
 offset_top = 1640.0
 offset_right = 1020.0
-offset_bottom = 1700.0
+offset_bottom = 1740.0
 theme_override_font_sizes/font_size = 30
 text = "Geser tile untuk menyusun 3+ warna sama. Ikuti panah kuning."
 autowrap_mode = 2
@@ -44,10 +52,11 @@ autowrap_mode = 2
 [node name="ResultLabel" type="Label" parent="HUD"]
 visible = false
 offset_left = 60.0
-offset_top = 1180.0
-offset_right = 900.0
-offset_bottom = 1260.0
+offset_top = 1160.0
+offset_right = 1020.0
+offset_bottom = 1340.0
 theme_override_font_sizes/font_size = 64
+horizontal_alignment = 1
 text = "MENANG!"
 
 [node name="BackButton" type="Button" parent="HUD"]
@@ -57,6 +66,24 @@ offset_right = 320.0
 offset_bottom = 1780.0
 text = "Kembali"
 
+[node name="DebugButton" type="Button" parent="HUD"]
+offset_left = 880.0
+offset_top = 60.0
+offset_right = 1020.0
+offset_bottom = 120.0
+text = "DBG"
+
+[node name="DebugLabel" type="Label" parent="HUD"]
+visible = false
+offset_left = 560.0
+offset_top = 130.0
+offset_right = 1020.0
+offset_bottom = 290.0
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 2
+text = ""
+
 [node name="PopupLayer" type="CanvasLayer" parent="."]
 
 [connection signal="pressed" from="HUD/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="HUD/DebugButton" to="." method="_on_debug_pressed"]

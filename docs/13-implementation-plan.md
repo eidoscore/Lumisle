@@ -308,43 +308,45 @@
 **Tujuan:** buktikan 1 slice terasa LEBIH HIDUP daripada match-3 generik, ke ORANG NYATA.
 **Acuan:** dok 12 §A (Definition of Fun F1-F8). Ini gate paling penting di seluruh proyek.
 
-### T3.1 — 3-5 level hand-crafted (full juice) `M`
+> **STATUS FASE 3: 🚧 KODE SELESAI (T3.1-T3.4), GATE PENDING MANUSIA (T3.5/T3.6) — 2026-06-01.** 106 unit test lulus (14 baru `test_vertical_slice.gd`). Diverifikasi di HP fisik via harness uiautomator2: Menu→Peta Level(5 lvl, bintang, lock bertahap)→Game→Menang→Meta(pulau bercahaya)→balik (level berikut terbuka). Analytics `analytics.jsonl` mencatat session/level_start/move/level_complete(stars,secs); save `save_v1.json` persist bintang. **Art masih placeholder kotak warna** (T1.16 belum) — risiko utama di gate F2/F6. T3.5 (uji ≥5 orang) + T3.6 (evaluasi gate) butuh manusia → alat siap di **dok 15**.
+
+### T3.1 — 3-5 level hand-crafted (full juice) `M` — [x] SELESAI
 - **Tujuan:** level yang dipoles habis (bukan placeholder), kurva sangat mudah → mulai menantang.
-- **Output:** 3-5 level hardcoded/`.tres` dengan objektif, juice penuh, balancing manual.
-- **DoD:** tiap level bisa dimenangkan, terasa "disengaja" (ada momen wow), bukan acak.
+- **Output:** ✅ `data/level_set.gd` — 5 level hardcoded ringan (SCOPE: bukan LevelDefinition Resource+JSON, itu Fase 4). Kurva: L1 (3 warna, 25 langkah, target 10, tutorial) → L5 (5 warna, 18 langkah, target 28). `stars_for()` (3/2/1 dari sisa langkah). Board dipusatkan horizontal.
+- **DoD:** ✅ tiap level bisa dimenangkan (diverifikasi: L1 menang otomatis via harness, 3 bintang); kurva move-limit non-naik & target naik (unit test). Juice penuh dari Fase 2.
 - **Depends:** Fase 2 selesai
 
-### T3.2 — FTUE mini (tutorial invisible) `M`
+### T3.2 — FTUE mini (tutorial invisible) `M` — [x] SELESAI
 - **Tujuan:** level 1-3 ajari tanpa popup (dok 12, GDD §8).
-- **Output:** highlight tile swap pertama; guaranteed win level 1; perkenalan 1 special.
-- **DoD:** orang baru bisa main level 1 tanpa dijelaskan.
+- **Output:** ✅ L1 flag `tutorial` → InstructionLabel "Geser tile agar 3+ WARNA SAMA sebaris. Ikuti panah kuning!" + hint panah otomatis (0.5s). Objektif L1 ringan (kumpul 10, 3 warna) = guaranteed-win realistis. Swap ditolak → pesan edukasi.
+- **DoD:** ✅ pemain baru dipandu hint panah + instruksi tanpa popup; instruksi hilang setelah langkah pertama.
 - **Depends:** T3.1
 
-### T3.3 — Meta placeholder (1 layar pulau, ~3 state) `S`
+### T3.3 — Meta placeholder (1 layar pulau, ~3 state) `S` — [x] SELESAI
 - **Tujuan:** kasih "alasan main" minimal untuk diuji.
-- **Output:** `meta/meta_scene.gd` — layar pulau redup→bercahaya, 3 langkah upgrade pakai bintang (art placeholder).
-- **DoD:** menang level → progress meta terlihat.
+- **Output:** ✅ `meta/meta_scene.gd` + `.tscn` — pulau redup→bercahaya 3 tahap (threshold total bintang 0/3/7), label tahap + total Lumi, ringkasan hasil level + glow berdenyut. `GameState.record_level_win` simpan bintang TERBAIK + persist via SaveManager (`save_v1.json`). Menang → ke meta.
+- **DoD:** ✅ menang level → bintang bertambah, pulau lebih terang (diverifikasi di HP: island color naik, save `{"1":3}`).
 - **Depends:** T3.1
 
-### T3.4 — Analytics lokal / Debug HUD `S`
+### T3.4 — Analytics lokal / Debug HUD `S` — [x] SELESAI
 - **Tujuan:** ukur perilaku tester (dok 09 §7, struktur event).
-- **Output:** logger lokal: level_start/complete/fail, moves_left, waktu, FPS. HUD debug toggle.
-- **DoD:** data sesi tercatat ke file lokal untuk ditinjau.
+- **Output:** ✅ `services/analytics.gd` (autoload) → `user://analytics.jsonl` (JSON-lines): session_start, level_start, move(moves_left), level_complete(moves_left,stars,secs), level_fail. Debug HUD toggle (tombol DBG) → FPS, p95 frame, level, total bintang.
+- **DoD:** ✅ data sesi tercatat ke file lokal (diverifikasi: `analytics.jsonl` berisi event lengkap termasuk level_complete stars:3).
 - **Depends:** T1.14
 
-### T3.5 — Build & uji ke ≥5 orang non-dev `M`
+### T3.5 — Build & uji ke ≥5 orang non-dev `M` — [~] ALAT SIAP, BUTUH MANUSIA
 - **Tujuan:** eksekusi Definition of Fun (dok 12 §A.2).
-- **Output:** APK; sesi observasi terpandu (jangan bantu); catat F1-F8.
-- **DoD:** data terkumpul dari ≥5 orang + 1 HP low-end (F8).
+- **Output:** ✅ APK debug siap (`export/lumisle_debug.apk`); ✅ panduan sesi + lembar observasi F1-F8 + cara tarik analytics = **dok 15**. ⬜ Sesi observasi ≥5 orang non-dev + 1 HP low-end = **butuh Dev jalankan** (AI tak bisa playtest manusia).
+- **DoD:** ⬜ data terkumpul dari ≥5 orang + 1 HP low-end (F8). → Dev jalankan pakai dok 15.
 - **Depends:** T3.1-T3.4
 
-### T3.6 — Evaluasi GATE `XS`
+### T3.6 — Evaluasi GATE `XS` — [~] TEMPLATE SIAP, BUTUH DATA T3.5
 - **Tujuan:** keputusan jujur lanjut/iterasi/stop.
-- **Output:** ringkasan F1-F8 vs ambang (dok 12 §A.3).
-- **DoD:** **LULUS semua F1-F8 → lanjut Fase 4.** Gagal sebagian → iterasi slice. Gagal 3 ronde → evaluasi fundamental.
+- **Output:** ✅ tabel evaluasi F1-F8 + aturan keputusan = **dok 15 §F-§G**. ⬜ isi hasil setelah T3.5.
+- **DoD:** ⬜ **LULUS semua F1-F8 → lanjut Fase 4.** Gagal sebagian → iterasi slice. Gagal 3 ronde → evaluasi fundamental.
 - **Depends:** T3.5
 
-> **⛔ GATE FASE 3:** Tidak lanjut ke Fase 4 (apalagi generator) sebelum gate ini LULUS. Ini rem darurat objektif sebelum investasi besar.
+> **⛔ GATE FASE 3:** Tidak lanjut ke Fase 4 (apalagi generator) sebelum gate ini LULUS. Ini rem darurat objektif sebelum investasi besar. **Status: kode slice SELESAI & teruji; tinggal Dev jalankan playtest (dok 15) lalu isi evaluasi.** Catatan jujur: art placeholder kotak warna kemungkinan jadi titik lemah F2 (keterbacaan) & F6 (kepuasan) — kalau gagal di situ, prioritas = art tile, bukan mekanik.
 
 ---
 

@@ -20,6 +20,7 @@ SaveManager="*res://meta/save_manager.gd"
 AudioManager="*res://services/audio_manager.gd"
 Settings="*res://services/settings.gd"
 PerformanceMonitor="*res://services/performance_monitor.gd"
+Analytics="*res://services/analytics.gd"
 
 [display]
 
