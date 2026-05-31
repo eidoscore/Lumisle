@@ -45,6 +45,7 @@ var _use_touch := false               # latch: kalau ada sentuhan native, abaika
 var _highlight: Panel = null          # outline tile terpilih
 var _hint_a: Panel = null
 var _hint_b: Panel = null
+var _hint_arrow: Line2D = null        # panah antar dua tile hint (jelaskan arah swap)
 var _hint_shown := false
 var _idle_time := 0.0
 
@@ -111,6 +112,16 @@ func _build_overlay() -> void:
 	_highlight.z_index = 10
 	_hint_a = _make_outline(Color(1, 0.9, 0.2, 0.95))
 	_hint_b = _make_outline(Color(1, 0.9, 0.2, 0.95))
+	# Panah hint: garis tebal kuning dari tile a → b untuk menunjukkan ARAH swap.
+	_hint_arrow = Line2D.new()
+	_hint_arrow.width = 10.0
+	_hint_arrow.default_color = Color(1, 0.85, 0.1, 0.95)
+	_hint_arrow.z_index = 11
+	_hint_arrow.visible = false
+	_hint_arrow.joint_mode = Line2D.LINE_JOINT_ROUND
+	_hint_arrow.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	_hint_arrow.end_cap_mode = Line2D.LINE_CAP_ROUND
+	add_child(_hint_arrow)
 
 
 func _make_outline(col: Color) -> Panel:
@@ -201,6 +212,7 @@ func _show_hint() -> void:
 	var b: Vector2i = mv["b"]
 	_place_outline(_hint_a, a)
 	_place_outline(_hint_b, b)
+	_draw_hint_arrow(a, b)
 	_hint_shown = true
 	var t := create_tween().set_loops()
 	t.tween_property(_hint_a, "modulate:a", 0.2, 0.45)
@@ -208,6 +220,22 @@ func _show_hint() -> void:
 	t.tween_property(_hint_a, "modulate:a", 1.0, 0.45)
 	t.parallel().tween_property(_hint_b, "modulate:a", 1.0, 0.45)
 	_hint_a.set_meta("tween", t)
+
+
+## Gambar panah dari pusat tile a ke pusat tile b (menjelaskan: "geser a ke arah b").
+func _draw_hint_arrow(a: Vector2i, b: Vector2i) -> void:
+	var ca := _tile_center(a.x, a.y)
+	var cb := _tile_center(b.x, b.y)
+	var dir := (cb - ca).normalized()
+	# Pendekkan sedikit agar panah tidak menutupi seluruh tile.
+	var start := ca + dir * 18.0
+	var tip := cb - dir * 18.0
+	var perp := Vector2(-dir.y, dir.x)
+	var head := 16.0
+	var h1 := tip - dir * head + perp * head * 0.6
+	var h2 := tip - dir * head - perp * head * 0.6
+	_hint_arrow.points = PackedVector2Array([start, tip, h1, tip, h2])
+	_hint_arrow.visible = true
 
 
 func _clear_hint() -> void:
@@ -224,6 +252,8 @@ func _clear_hint() -> void:
 	if _hint_b:
 		_hint_b.visible = false
 		_hint_b.modulate.a = 1.0
+	if _hint_arrow:
+		_hint_arrow.visible = false
 
 
 ## Reset timer idle TANPA menyembunyikan hint (hint tetap terlihat selagi menimbang).

@@ -20,6 +20,7 @@ var _finished := false
 @onready var _moves_label: Label = $HUD/MovesLabel
 @onready var _objective_label: Label = $HUD/ObjectiveLabel
 @onready var _result_label: Label = $HUD/ResultLabel
+@onready var _instruction_label: Label = $HUD/InstructionLabel
 
 
 func _ready() -> void:
@@ -94,6 +95,9 @@ func _on_back_pressed() -> void:
 func consume_move() -> void:
 	if _finished:
 		return
+	# Sembunyikan instruksi tutorial setelah langkah valid pertama.
+	if _instruction_label:
+		_instruction_label.visible = false
 	_moves_left -= 1
 	_update_hud()
 	if _moves_left <= 0 and not _objective.is_complete():
