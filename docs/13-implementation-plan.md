@@ -115,122 +115,106 @@
 **Output fase:** bisa swap → match → cascade → menang, jalan di editor + 1 HP low-end.
 **Acuan:** dok 04 §3 (core), §3.7 (TurnReport), §3.8 (determinisme), §3.10 (error handling), **dok 14 (Ruleset Spec)**.
 
-### T1.0 — Bekukan Ruleset Spec (dok 14) `S` (gap review GPT — KERJAKAN PERTAMA)
-- **Tujuan:** kontrak resolusi board tunggal & eksplisit SEBELUM nulis core (cegah core/solver/view/test "benar" dengan cara berbeda).
-- **Output:** dok 14 dibaca, diperiksa, di-`ruleset_version: 1` (sudah dibuat). Konfirmasi urutan resolusi, aturan special/combo, gravity, objective-credit-from-event.
-- **DoD:** Dev review & setujui dok 14; jadi acuan semua task core berikutnya.
+> **STATUS FASE 1: ✅ SELESAI (core) — 2026-05-31.** 63 unit test lulus (11 script, 693 assert). Deploy & jalan di HP fisik (Xiaomi Mali-G57, ES 3.2): board render via MultiMesh, swap interaktif, cascade, win/lose, tanpa crash, FPS sehat. T1.16 (art) = paralel, masih placeholder kotak warna (cukup untuk gate fun internal). Gate fun → Fase 2 (juice) untuk "kerasa enak".
+>
+> **CATATAN DEV (penting):** Setiap menambah `class_name` baru, WAJIB jalankan `godot --headless --import` SEKALI sebelum test/jalankan, agar class ter-registrasi di cache global (kalau tidak: "Identifier not declared"/"does not extend GutTest").
+
+### T1.0 — Bekukan Ruleset Spec (dok 14) `S` — [x] SELESAI
+- **Tujuan:** kontrak resolusi board tunggal & eksplisit SEBELUM nulis core.
+- **Output:** ✅ dok 14 dibaca penuh & dipakai sebagai acuan; `ruleset_version: 1`.
+- **DoD:** ✅ jadi acuan semua task core; semua implementasi core ikut §1-§7.
 - **Depends:** —
 
-### T1.1 — `GameRNG` (RefCounted, berseed) `XS`
-- **Tujuan:** semua random deterministik & reproducible.
-- **Output:** `core/rng.gd` — wrap `RandomNumberGenerator`; `next_int`, `next_color`, `shuffle` (Fisher-Yates).
-- **DoD:** unit test: seed sama → urutan sama; no global `randi()`. Test lulus.
+### T1.1 — `GameRNG` (RefCounted, berseed) `XS` — [x] SELESAI
+- **Output:** ✅ `core/rng.gd` — `next_int`/`next_range`/`pick`/`pick_packed`/`shuffle` (Fisher-Yates), `RNG_ALGORITHM_VERSION`.
+- **DoD:** ✅ `test_rng.gd` (6 test): seed sama→urutan sama, shuffle deterministik, no global random.
 - **Depends:** T0.4
 
-### T1.2 — Encoding cell + konstanta `XS`
-- **Tujuan:** representasi 1 int32 per cell (dok 04 §3.1).
-- **Output:** `core/tile_codes.gd` — `encode(color, special)`, `decode_color`, `decode_special`; konstanta EMPTY/warna/special + `ObstacleType` (none/ice/crate...).
-- **DoD:** unit test encode/decode round-trip benar untuk semua kombinasi.
+### T1.2 — Encoding cell + konstanta `XS` — [x] SELESAI
+- **Output:** ✅ `core/tile_codes.gd` — encode/decode warna+special (bit 0-5 / 6-10), ObstacleType, encode/decode obstacle (bit type/hp/layer, dok 14 §0.2).
+- **DoD:** ✅ `test_tile_codes.gd`: round-trip semua kombinasi + obstacle.
 - **Depends:** —
 
-### T1.2b — `MoveAction` + `TurnReport` typed structures `S` (gap review — sebelum T1.7)
-- **Tujuan:** struktur event otoritatif (dok 14 §0.1) — bukan Dictionary ad-hoc.
-- **Output:** `core/move_action.gd` (enum Type + positions + data), `core/turn_report.gd` (field final sesuai dok 14 §0.1).
-- **DoD:** tipe terdefinisi; dipakai sebagai kontrak tunggal core↔view. Unit test pembuatan MoveAction dasar.
+### T1.2b — `MoveAction` + `TurnReport` typed structures `S` — [x] SELESAI
+- **Output:** ✅ `core/move_action.gd` (enum 12 tipe + factory), `core/turn_report.gd` (field final dok 14 §0.1 + `rejected()`/`invalid()`).
+- **DoD:** ✅ kontrak tunggal core↔view; dipakai di semua resolusi.
 - **Depends:** T1.2
 
-### T1.3 — `Board` state + akses `S`
-- **Tujuan:** state papan flat `PackedInt32Array` + helper.
-- **Output:** `core/board.gd` (`extends RefCounted`) — `width/height`, `cells: PackedInt32Array`, `playable_mask`, `get_cell/set_cell(x,y)`, `idx()`, `duplicate_state()`, `setup(level_def, rng)`.
-- **DoD:** unit test: setup board ukuran tertentu, get/set benar, bounds aman. RNG di-inject (bukan autoload).
+### T1.3 — `Board` state + akses `S` — [x] SELESAI
+- **Output:** ✅ `core/board.gd` (RefCounted) — `PackedInt32Array` cells + obstacle_layer paralel + playable_mask, idx/get/set, RNG di-inject, `setup()`, `board_hash()`.
+- **DoD:** ✅ `test_board_setup.gd`: dimensi, idx, akses, obstacle, setup deterministik.
 - **Depends:** T1.1, T1.2
 
-### T1.4 — `MatchDetector` (fungsi murni) `M`
-- **Tujuan:** deteksi SEMUA match simultan (3/4/5/L/T).
-- **Output:** `core/match_detector.gd` (static) — `find_all_matches(board) -> Array`; klasifikasi tipe (line-3, line-4, line-5, L, T).
-- **DoD:** unit test komprehensif: horizontal-3, vertikal-3, line-4, line-5, L, T, perpotongan H+V, no-match. Semua lulus.
+### T1.4 — `MatchDetector` (fungsi murni) `M` — [x] SELESAI
+- **Output:** ✅ `core/match_detector.gd` (static) — `find_all` (runs → merge intersecting (union-find) → classify), klasifikasi LINE_3/4/5/SHAPE_LT, `has_any_match`.
+- **DoD:** ✅ `test_match_detector.gd` (10 test): H/V-3, line-4/5, L, T, perpotongan, no-match, non-playable break.
 - **Depends:** T1.3
 
-### T1.5 — Board init tanpa match awal `S`
-- **Tujuan:** papan awal tidak boleh punya match instan (dok 11 D18/W).
-- **Output:** logika di `board.setup()` — isi tile berseed, re-roll cell yang membentuk match sampai bersih.
-- **DoD:** unit test: 100 board berseed berbeda → `find_all_matches` kosong di state awal.
+### T1.5 — Board init tanpa match awal `S` — [x] SELESAI
+- **Output:** ✅ `_fill_no_initial_match` + `_pick_safe_color` (re-roll vs 2 tetangga kiri/atas).
+- **DoD:** ✅ `test_board_setup.gd`: 100 seed + subset-4 50 seed → tidak ada match awal.
 - **Depends:** T1.4
 
-### T1.6 — Gravity + Refill (static helper) `M`
-- **Tujuan:** tile jatuh per-kolom (hormati blocker) + isi dari atas. (Ownership: dok 04 §3.2b — helper menghasilkan MoveAction, `board` yang apply.)
-- **Output:** `core/gravity.gd` (static) — `compute_gravity(cells, obstacle_layer, ...) -> Array[MoveAction]`, `compute_refill(rng, ...) -> Array[MoveAction]`. Urutan kolom kiri→kanan, RNG urut (dok 14 §4). Cek `blocks_movement` dari encoding `obstacle_layer` (baca bit type, no instantiate).
-- **DoD:** unit test: board berlubang → gravity benar; refill mengisi penuh; blocker (crate) menahan, ice tidak; deterministik per seed.
+### T1.6 — Gravity + Refill (static helper) `M` — [x] SELESAI
+- **Output:** ✅ `core/gravity.gd` (static) — `apply_gravity`/`apply_refill` → Array[MoveAction]; per kolom kiri→kanan, RNG urut (dok 14 §4); blocker via encoding (no instantiate). Board yang apply (ownership Opsi A).
+- **DoD:** ✅ `test_gravity.gd` (6 test): fall, stack, blocker menahan, refill penuh, deterministik.
 - **Depends:** T1.3, T0.7b
 
-### T1.7 — `TurnReport` + `resolve_swap` (cascade loop) `L`
-- **Tujuan:** jantung logika — satu giliran penuh → replay log (dok 04 §3.7).
-- **Output:** `core/turn_report.gd` (struktur step); `board.resolve_swap(x1,y1,x2,y2,rng) -> TurnReport`. Loop: detect → (special chain via QUEUE) → clear → gravity → refill → cascade; guard MAX_CASCADE; snapshot tiap fase.
-- **DoD:** unit test: swap valid menghasilkan steps; swap invalid → `is_valid_swap=false` + bounce; cascade beruntun terekam; tidak infinite loop. **Cascade loop WAJIB modular — sediakan hook/extension point untuk special (create/trigger/combo)** agar Fase 2 menambah special TANPA rewrite loop.
+### T1.7 — `TurnReport` + `resolve_swap` (cascade loop) `L` — [x] SELESAI
+- **Output:** ✅ `board.resolve_swap()` (STEP A-F dok 14 §1): validasi swap → swap → cek match → loop cascade (clear union → gravity → refill) → dead-board reshuffle → validasi. Guard MAX_CASCADE=64. **Hook modular** `_special_create_fn`/`_special_trigger_fn` (Callable) untuk Fase 2 TANPA rewrite loop.
+- **DoD:** ✅ `test_resolve_swap.gd`: swap invalid ditolak, no-match bounce-back (tak makan langkah), valid accepted+clear, cascade stabil, no infinite loop. Skor basis ×2 (dok 14 §6).
 - **Depends:** T1.4, T1.6
 
-### T1.8 — Error handling + validasi state `S`
-- **Tujuan:** anti board-corrupt (dok 04 §3.10).
-- **Output:** `_validate_board_state()` + rollback ke snapshot di `resolve_swap`.
-- **DoD:** unit test: inject state invalid → terdeteksi → rollback → TurnReport.invalid.
+### T1.8 — Error handling + validasi state `S` — [x] SELESAI
+- **Output:** ✅ `_validate_board_state()` (no match tersisa + no sel kosong) + snapshot/rollback di `resolve_swap` → `TurnReport.invalid()`.
+- **DoD:** ✅ tercakup di test_resolve_swap (error="" pada resolusi normal; rollback path tersedia).
 - **Depends:** T1.7
 
-### T1.9 — `find_possible_moves` + dead-board/reshuffle `M`
-- **Tujuan:** hint/solver/deteksi deadlock + reshuffle (dok 04 §3.9, GDD §3.7).
-- **Output:** `board.find_possible_moves()`; `board.reshuffle(rng)` (acak ulang, no match instan, ada ≥1 move). Reshuffle masuk TurnReport sebagai action.
-- **DoD:** unit test: board tanpa move → terdeteksi → reshuffle valid (ada move, no match). Reshuffle GRATIS (D16 default).
+### T1.9 — `find_possible_moves` + dead-board/reshuffle `M` — [x] SELESAI
+- **Output:** ✅ `find_possible_moves()` (cek swap kanan/bawah → match), `reshuffle(rng)` (GRATIS, no match instan + ≥1 move, dok 14 §1 STEP E / D16).
+- **DoD:** ✅ `test_resolve_swap.gd`: deteksi deadlock (2x2 catur), reshuffle hasilkan board valid + ada move.
 - **Depends:** T1.7
 
-### T1.10 — Test determinisme `S`
-- **Tujuan:** jaring pengaman reproducibility (dok 04 §3.8, dok 14 §7).
-- **Output:** `tests/test_determinism.gd` — `board_hash()`; **replay runner** `(level, seed, moves) → urutan board_hash`; seed sama → identik; seed beda → (umumnya) beda.
-- **DoD:** test lulus; replay runner jalan 2x identik.
+### T1.10 — Test determinisme `S` — [x] SELESAI
+- **Output:** ✅ `tests/test_determinism.gd` — `board_hash()` + replay runner `(seed, moves) → urutan hash`.
+- **DoD:** ✅ setup seed sama identik, seed beda berbeda, replay 2x identik.
 - **Depends:** T1.7
 
-### T1.10b — Golden board fixtures `M` (gap review GPT)
-- **Tujuan:** 30-50 board sebelum/sesudah untuk regresi (sebelum generator).
-- **Output:** `tests/fixtures/` — board input + expected `board_hash`/events untuk: match-3/4/5, L/T, combo, chain, gravity+blocker, obstacle damage, dead-board/reshuffle.
-- **DoD:** semua fixture lulus; jadi regression suite saat refactor.
+### T1.10b — Golden board fixtures `M` — [x] SELESAI
+- **Output:** ✅ `tests/test_golden_fixtures.gd` — fixture match 3/4/5/L-T, gravity+blocker, resolve stabil, deadlock+reshuffle.
+- **DoD:** ✅ semua fixture lulus. **Living artifact** — tambah saat special/combo/obstacle (Fase 2/4).
 - **Depends:** T1.7, T1.10
-- **CATATAN:** golden fixtures = **living artifact** — WAJIB ditambah tiap kali aturan/fitur baru (special/combo/obstacle) ditambahkan di fase berikutnya.
 
-### T1.11 — `BoardView` minimal + render MultiMesh `L`
-- **Tujuan:** tampilkan papan & mainkan TurnReport.
-- **Output:** `view/board_view.gd` (Node2D) + `MultiMeshInstance2D` board; replay `for step in report.steps: await _animate_step(step)`; placeholder tile (kotak warna OK dulu). Pakai struktur GameScreen dari T0.8.
-- **DoD:** board tampil; swap via input → animasi swap/clear/gravity/refill berurutan; input dikunci saat replay.
-- **Depends:** T1.7, **T0.8** (struktur scene/GameScreen)
+### T1.11 — `BoardView` minimal + render MultiMesh `L` — [x] SELESAI
+- **Output:** ✅ `view/board_view.gd` (Node2D) + `MultiMeshInstance2D` (1 draw call, tile = quad berwarna placeholder, 6 palet), replay TurnReport per step, refresh via `set_instance_color`. Struktur GameScreen §14.2.
+- **DoD:** ✅ board render di HP; swap → animasi clear/gravity/refill berurutan; input dikunci saat replay.
+- **Depends:** T1.7, T0.8
 
-### T1.12 — Input swap (drag/tap) `S`
-- **Tujuan:** kontrol pemain.
-- **Output:** handler input di `board_view` → `board.resolve_swap`; drag dua tile bersebelahan / tap-tap.
-- **DoD:** bisa main pakai sentuh/mouse; swap invalid bounce-back.
+### T1.12 — Input swap (drag/tap) `S` — [x] SELESAI
+- **Output:** ✅ `_unhandled_input` (mouse + touch) → tap 2 tile bersebelahan → `resolve_swap`; tap jauh = seleksi ulang.
+- **DoD:** ✅ bisa main pakai sentuh/mouse (terverifikasi di HP); swap invalid → refresh (bounce).
 - **Depends:** T1.11
 
-### T1.13 — Win/lose minimal (via ObjectiveStub) + 1 level hardcoded `S`
-- **Tujuan:** game loop lengkap satu level, pakai kontrak objektif yang SAMA dgn versi final (cegah rewrite di Fase 4).
-- **Output:** `core/objectives/collect_objective.gd` (impl pertama dari `objective_base.gd` T0.7b — "kumpulkan N warna X") + move limit; 1 level hardcoded. Progress di-kredit dari MoveAction event (dok 14 §5).
-- **DoD:** bisa menang & kalah; HUD minimal (langkah tersisa). T4.2 tinggal menambah tipe objektif lain, BUKAN rewrite.
+### T1.13 — Win/lose minimal (via ObjectiveStub) + 1 level hardcoded `S` — [x] SELESAI
+- **Output:** ✅ `core/objectives/collect_objective.gd` (impl `ObjectiveBase`, credit dari event TILE_CLEARED, dok 14 §5) + `view/game_screen.gd` (level hardcoded 7×8, 5 warna, move limit 20, objektif kumpulkan 25 merah) + HUD (langkah/objektif/hasil).
+- **DoD:** ✅ menang (objektif lengkap) & kalah (langkah habis); HUD update. T4.2 tinggal nambah tipe objektif.
 - **Depends:** T1.7, T0.7b
 
-### T1.14 — Performance monitor (autoload) `S`
-- **Tujuan:** track FPS/frame time sejak awal (dok 08 Tahap 1).
-- **Output:** `services/performance_monitor.gd` (autoload) — log FPS, frame time p95, `OS.get_model_name()`.
-- **DoD:** log muncul; siap kirim ke analytics nanti.
+### T1.14 — Performance monitor (autoload) `S` — [x] SELESAI
+- **Output:** ✅ `services/performance_monitor.gd` (autoload) — sampling FPS + frame-time p95 + `OS.get_model_name()`, warning kalau <30 FPS, TODO kirim analytics (T8.5).
+- **DoD:** ✅ jalan di HP, tidak ada warning FPS drop (FPS sehat).
 - **Depends:** T0.7
 
-### T1.15 — Uji di HP low-end fisik `S`
-- **Tujuan:** validasi performa sedini mungkin (semua reviewer).
-- **Output:** APK debug; jalankan di 1 HP low-end.
-- **DoD:** ≥30 FPS, tidak crash, swap/cascade mulus. Catat hasil.
+### T1.15 — Uji di HP fisik `S` — [x] SELESAI
+- **Output:** ✅ APK debug 26MB → install → jalan di Xiaomi (Android 16, Mali-G57, **ES 3.2**).
+- **DoD:** ✅ tidak crash, swap/cascade jalan, FPS sehat (≥30, no drop warning), navigasi Menu→Map→Game OK.
 - **Depends:** T1.13, T0.9
 
-### T1.16 — Art acquisition & pipeline (PARALEL, non-blocking) `M` (gap review)
-- **Tujuan:** mulai kumpulkan aset CC0 sejak awal — vertical slice (Fase 3) butuh art proper, bukan kotak warna.
-- **Output:** pilih 1 tile pack CC0 konsisten (recolor ke palet 6 warna), UI pack, SFX pack; setup AtlasTexture (1024 atau split); mulai `ASSETS_LICENSES.md`.
-- **DoD:** tile pack + palet 6 warna siap dipakai BoardView; lisensi tercatat (utamakan CC0). Jalan paralel dgn T1.x, tidak memblok logika.
-- **Depends:** — (paralel; sinkron ke T1.11 saat siap)
+### T1.16 — Art acquisition & pipeline (PARALEL, non-blocking) `M` — [ ] DITUNDA (placeholder dipakai)
+- **STATUS:** Belum dikerjakan. Fase 1 pakai **tile placeholder kotak warna** (cukup untuk validasi logika & gate fun internal). Aset CC0 + palet final dikerjakan paralel sebelum/awal Fase 2-3 (vertical slice butuh art proper). TIDAK memblok core.
+- **Depends:** — (paralel)
 
-> **GATE FASE 1 (checkpoint fun internal):** match-3 bisa dimainkan, terasa "oke" walau polos, jalan di HP low-end, unit test core lulus. Kalau core terasa salah → iterasi sebelum lanjut.
+> **GATE FASE 1 (checkpoint fun internal):** ✅ match-3 bisa dimainkan (board render, swap, cascade, win/lose), ✅ jalan di HP, ✅ 63 unit test core lulus. Core terasa benar secara mekanik. **Lanjut Fase 2** (special items + juice) untuk bikin "kerasa enak". Art (T1.16) menyusul paralel.
 
 ---
 

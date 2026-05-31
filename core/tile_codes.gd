@@ -51,3 +51,37 @@ static func decode_special(value: int) -> int:
 ## Apakah tipe obstacle ini menahan gravity? (dipakai gravity.gd T1.6 tanpa instantiate)
 static func obstacle_blocks_movement(obstacle_type: int) -> bool:
 	return obstacle_type == ObstacleType.CRATE
+
+
+# --- Obstacle layer encoding (dok 14 §0.2). 1 int32 paralel dgn cells. ---
+# bit 0-7 = type_id, bit 8-15 = hp, bit 16-23 = layer.
+const _OBS_TYPE_MASK := 0xFF
+const _OBS_HP_SHIFT := 8
+const _OBS_HP_MASK := 0xFF
+const _OBS_LAYER_SHIFT := 16
+const _OBS_LAYER_MASK := 0xFF
+const OBS_NONE := 0
+
+
+## Encode obstacle jadi int32 untuk obstacle_layer.
+static func encode_obstacle(obstacle_type: int, hp: int = 1, layer: int = 1) -> int:
+	return (obstacle_type & _OBS_TYPE_MASK) \
+		| ((hp & _OBS_HP_MASK) << _OBS_HP_SHIFT) \
+		| ((layer & _OBS_LAYER_MASK) << _OBS_LAYER_SHIFT)
+
+
+static func obstacle_type(encoded: int) -> int:
+	return encoded & _OBS_TYPE_MASK
+
+
+static func obstacle_hp(encoded: int) -> int:
+	return (encoded >> _OBS_HP_SHIFT) & _OBS_HP_MASK
+
+
+static func obstacle_layer_of(encoded: int) -> int:
+	return (encoded >> _OBS_LAYER_SHIFT) & _OBS_LAYER_MASK
+
+
+## Apakah cell (encoded obstacle) menahan gravity? OBS_NONE = tidak.
+static func encoded_blocks_movement(encoded: int) -> bool:
+	return obstacle_blocks_movement(obstacle_type(encoded))
