@@ -49,6 +49,15 @@ var _hint_arrow: Line2D = null        # panah antar dua tile hint (jelaskan arah
 var _hint_shown := false
 var _idle_time := 0.0
 
+# --- Juice (T2.5) ---
+var _fx_root: Node2D = null           # parent partikel
+var _particle_pool: Array = []        # CPUParticles2D pooled
+var _particle_next := 0
+const PARTICLE_POOL_SIZE := 16
+var _shake_amount := 0.0              # intensitas shake aktif
+var _base_offset := Vector2.ZERO     # posisi dasar _tiles_root (untuk shake)
+var _cascade_depth := 0              # untuk pitch SFX naik per cascade
+
 # Callback opsional: dipanggil tiap TILE_CLEARED untuk credit objektif (di-set GameScreen).
 var on_tiles_cleared: Callable = Callable()
 
@@ -58,7 +67,54 @@ func setup_board(p_board: Board, move_rng: GameRNG) -> void:
 	_move_rng = move_rng
 	_build_tiles()
 	_build_overlay()
+	_build_fx()
 	_refresh_all()
+
+
+# ---------------------------------------------------------------------------
+# Juice infra (T2.5) — pool partikel + screen shake.
+# ---------------------------------------------------------------------------
+
+func _build_fx() -> void:
+	if _fx_root != null and is_instance_valid(_fx_root):
+		_fx_root.queue_free()
+	_fx_root = Node2D.new()
+	_fx_root.z_index = 20
+	add_child(_fx_root)
+	_particle_pool.clear()
+	for i in range(PARTICLE_POOL_SIZE):
+		var pt := CPUParticles2D.new()
+		pt.emitting = false
+		pt.one_shot = true
+		pt.explosiveness = 0.95
+		pt.amount = 10
+		pt.lifetime = 0.5
+		pt.direction = Vector2(0, -1)
+		pt.spread = 180.0
+		pt.gravity = Vector2(0, 600)
+		pt.initial_velocity_min = 80.0
+		pt.initial_velocity_max = 220.0
+		pt.scale_amount_min = 3.0
+		pt.scale_amount_max = 6.0
+		_fx_root.add_child(pt)
+		_particle_pool.append(pt)
+
+
+## Semburan partikel di posisi sel (warna mengikuti tile).
+func _burst_particles(grid: Vector2i, col: Color) -> void:
+	if _particle_pool.is_empty():
+		return
+	var pt: CPUParticles2D = _particle_pool[_particle_next]
+	_particle_next = (_particle_next + 1) % _particle_pool.size()
+	pt.position = _tile_center(grid.x, grid.y)
+	pt.color = col
+	pt.restart()
+	pt.emitting = true
+
+
+## Picu screen shake (intensitas px). Di-decay di _process.
+func _shake(amount: float) -> void:
+	_shake_amount = maxf(_shake_amount, amount)
 
 
 # ---------------------------------------------------------------------------
@@ -220,6 +276,13 @@ func _color_for(x: int, y: int) -> Color:
 # ---------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	# Screen shake decay (T2.5) — jalan walau animasi/locked.
+	if _shake_amount > 0.01 and _tiles_root != null:
+		var off := Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * _shake_amount
+		_tiles_root.position = _base_offset + off
+		_shake_amount = lerpf(_shake_amount, 0.0, clampf(delta * 12.0, 0.0, 1.0))
+		if _shake_amount <= 0.01:
+			_tiles_root.position = _base_offset
 	if board == null or _animating or not _input_enabled:
 		return
 	if _hint_shown:
@@ -411,6 +474,7 @@ func _do_swap(x1: int, y1: int, x2: int, y2: int) -> void:
 
 	if not will_match:
 		# Slide ke tetangga lalu balik — jelas "ditolak", warna tetap benar (board tak berubah).
+		AudioManager.play_sfx("invalid")
 		await _anim_swap_visual(x1, y1, x2, y2)
 		await _anim_swap_visual(x2, y2, x1, y1)
 		_refresh_all()
@@ -450,16 +514,34 @@ func _anim_swap_visual(x1: int, y1: int, x2: int, y2: int) -> void:
 	_animating = false
 
 
-## Replay TurnReport: animasikan clear (pop), gravity & refill (tile turun).
+## Replay TurnReport: animasikan clear (pop+partikel), special trigger (flash+shake),
+## gravity & refill (tile turun bounce), + SFX/haptic. Juice = T2.5/T2.6.
 func _play_report(report: TurnReport) -> void:
 	_animating = true
+	_cascade_depth = 0
 	for step in report.steps:
 		match step.type:
 			MoveAction.Type.TILE_CLEARED:
 				if on_tiles_cleared.is_valid():
 					on_tiles_cleared.call(step)
+				_cascade_depth += 1
+				# SFX pitch naik per cascade (lebih dalam → lebih tinggi/heboh).
+				AudioManager.play_sfx("match", 1.0 + 0.12 * float(_cascade_depth - 1))
+				if Settings.haptic_enabled and step.positions.size() >= 4:
+					Input.vibrate_handheld(20)
 				await _anim_clear_pop(step)
 				_refresh_all()
+			MoveAction.Type.SPECIAL_TRIGGERED:
+				AudioManager.play_sfx("special")
+				_shake(6.0)
+				if Settings.haptic_enabled:
+					Input.vibrate_handheld(30)
+				await get_tree().create_timer(0.04).timeout
+			MoveAction.Type.COMBO_TRIGGERED:
+				AudioManager.play_sfx("combo")
+				_shake(12.0)
+				if Settings.haptic_enabled:
+					Input.vibrate_handheld(50)
 			MoveAction.Type.TILE_FELL, MoveAction.Type.TILE_SPAWNED:
 				_refresh_all()
 				await get_tree().create_timer(0.05).timeout
@@ -469,7 +551,7 @@ func _play_report(report: TurnReport) -> void:
 	_animating = false
 
 
-## Pop tile yang di-clear: kecilkan + fade ColorRect-nya, lalu refresh balikin.
+## Pop tile yang di-clear: kecilkan + fade ColorRect + semburan partikel, lalu refresh.
 func _anim_clear_pop(step) -> void:
 	var positions: Array = step.positions
 	if positions.is_empty():
@@ -480,7 +562,10 @@ func _anim_clear_pop(step) -> void:
 		var rect: ColorRect = _tiles[board.idx(p.x, p.y)]
 		if rect == null:
 			continue
+		_burst_particles(p, rect.color)
 		rect.pivot_offset = rect.size * 0.5
 		t.tween_property(rect, "scale", Vector2(0.1, 0.1), 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 		t.parallel().tween_property(rect, "modulate:a", 0.0, 0.16)
+	# Shake ringan proporsional jumlah tile (cap supaya tidak lebay).
+	_shake(minf(2.0 + positions.size() * 0.6, 8.0))
 	await t.finished

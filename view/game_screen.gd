@@ -77,6 +77,45 @@ func _finish(won: bool) -> void:
 	if _result_label:
 		_result_label.text = "MENANG!" if won else "KALAH"
 		_result_label.visible = true
+		_animate_result(won)
+	# SFX + haptic (T2.6/T2.7).
+	AudioManager.play_sfx("win" if won else "lose")
+	if won and Settings.haptic_enabled:
+		Input.vibrate_handheld(120)
+
+
+## Animasi reward sederhana (T2.7): label hasil "pop" + (menang) bintang terbang.
+func _animate_result(won: bool) -> void:
+	_result_label.pivot_offset = _result_label.size * 0.5
+	_result_label.scale = Vector2(0.3, 0.3)
+	var t := create_tween()
+	t.tween_property(_result_label, "scale", Vector2(1.15, 1.15), 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(_result_label, "scale", Vector2(1.0, 1.0), 0.12)
+	if won:
+		_spawn_win_stars()
+
+
+## Bintang/koin terbang dari tengah layar ke atas (placeholder reward menang).
+func _spawn_win_stars() -> void:
+	var pt := CPUParticles2D.new()
+	pt.position = Vector2(540, 1100)
+	pt.z_index = 50
+	pt.emitting = false
+	pt.one_shot = true
+	pt.explosiveness = 0.8
+	pt.amount = 40
+	pt.lifetime = 1.2
+	pt.direction = Vector2(0, -1)
+	pt.spread = 70.0
+	pt.gravity = Vector2(0, 300)
+	pt.initial_velocity_min = 300.0
+	pt.initial_velocity_max = 700.0
+	pt.scale_amount_min = 4.0
+	pt.scale_amount_max = 8.0
+	pt.color = Color(1.0, 0.85, 0.2)
+	$HUD.add_child(pt)
+	pt.restart()
+	pt.emitting = true
 
 
 func _on_level_won() -> void:

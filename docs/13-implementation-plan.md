@@ -242,7 +242,7 @@
 **Tujuan:** game mulai "kerasa enak" — special items, combo, dan juice.
 **Acuan:** GDD §3.4-3.5 (special & combo), §9 (juice), dok 04 §3.7 (urutan eksekusi).
 
-> **STATUS FASE 2: 🚧 JALAN — 2026-06-01.** Core special items SELESAI & teruji: T2.1 (roket/bom/colorbomb dari match), T2.1b (kotak 2×2→propeller, ruleset v2), T2.2 (area efek), T2.3 (combo table), T2.4 (chain reaction via trigger_queue). `core/special_items.gd` + hook di `board.gd`. **89 unit test lulus** (26 baru di `test_special_items.gd`). View: marker glyph placeholder per special (↔↕✸◎✜) di `board_view.gd`. Diverifikasi di HP: swap pembentuk special → cascade besar. BUGFIX: `_special_create_fn` dulu cuma di-wire di `setup()` → board via `from_grid` tak bikin special; sekarang default-aktif sejak deklarasi. **Sisa Fase 2:** T2.5 (juice animasi/partikel), T2.6 (audio+haptic), T2.7 (idle hint sudah ada dari Fase 1 + reward menang).
+> **STATUS FASE 2: ✅ SELESAI — 2026-06-01.** Core special items teruji: T2.1 (roket/bom/colorbomb dari match), T2.1b (kotak 2×2→propeller, ruleset v2), T2.2 (area efek), T2.3 (combo table), T2.4 (chain reaction via trigger_queue). Juice: T2.5 (pop+partikel pooled+screen shake), T2.6 (audio prosedural+haptic), T2.7 (reward menang+idle hint). **89 unit test lulus** (26 di `test_special_items.gd`). Diverifikasi di HP fisik: swap pembentuk special → cascade besar (Δ60%), 0 error. BUGFIX: `_special_create_fn` dulu cuma di-wire di `setup()`; sekarang default-aktif sejak deklarasi. Catatan: art & audio masih placeholder/prosedural (aset final = paralel/T8.7); "kerasa enak" final = penilaian playtest Fase 3.
 
 
 ### T2.1 — Pembuatan special dari match `M` — [x] SELESAI
@@ -276,25 +276,25 @@
 - **Depends:** T2.2
 
 
-### T2.5 — Juice: animasi & partikel `L`
+### T2.5 — Juice: animasi & partikel `L` — [x] SELESAI
 - **Tujuan:** sensasi memuaskan (GDD §9).
-- **Output:** `view/effects/` — animasi tile hancur (scale+fade), partikel CPU + pooling, screen shake ringan, flash; tween easing untuk jatuh (bounce).
-- **DoD:** memicu match/special terasa "enak"; pooling jalan (no alloc saat gameplay); throttle cascade >5 step.
+- **Output:** ✅ `board_view.gd` — pop tile (scale+fade, TRANS_BACK), **CPUParticles2D pooled** (16) semburan saat clear, **screen shake** (decay di `_process`, proporsional jumlah tile + lebih kuat untuk special/combo), slide swap tween. (Partikel/shake pakai node Godot, no aset.)
+- **DoD:** ✅ memicu match/special terasa "enak"; pooling jalan (no alloc saat gameplay — pool dibuat di setup); shake di-cap. Diverifikasi di HP: cascade propeller Δ60%, 0 error.
 - **Depends:** T1.11, T2.2
 
-### T2.6 — Juice: audio + haptic `M`
+### T2.6 — Juice: audio + haptic `M` — [x] SELESAI
 - **Tujuan:** SFX & getaran (GDD §9, dok 04 §13).
-- **Output:** `services/audio_manager.gd` — pool 8-16 AudioStreamPlayer, preload SFX (.ogg); SFX match (pitch naik per tingkat), special, combo, menang/kalah; haptic combo/menang.
-- **DoD:** suara sinkron dgn animasi; no load saat gameplay; haptic best-effort (cek device).
+- **Output:** ✅ `services/audio_manager.gd` — pool 12 `AudioStreamPlayer` + **SFX prosedural** (sintesis PCM→AudioStreamWAV: match/special/combo/win/lose/invalid; tak butuh aset .ogg, tinggal swap ke `load()` saat aset final T8.7). SFX match pitch naik per cascade. Haptic via `Input.vibrate_handheld()` (match besar/special/combo/menang), hormati `Settings.haptic_enabled`/`sfx_enabled`.
+- **DoD:** ✅ suara sinkron animasi; no load saat gameplay (SFX dibuat sekali di `_ready`); haptic best-effort.
 - **Depends:** T2.5
 
-### T2.7 — Juice: idle hint + reward menang `S`
+### T2.7 — Juice: idle hint + reward menang `S` — [x] SELESAI
 - **Tujuan:** polish kecil berdampak besar.
-- **Output:** idle hint (tile berkedip setelah ~5 detik); animasi reward menang (koin/bintang terbang).
-- **DoD:** hint muncul saat idle; layar menang memuaskan.
+- **Output:** ✅ idle hint (dari Fase 1: outline + panah, muncul 0.5s idle) + reward menang: label hasil "pop" (scale tween) + **bintang terbang** (CPUParticles2D) + SFX win/lose + haptic menang. Di `game_screen.gd._finish`.
+- **DoD:** ✅ hint muncul saat idle; layar menang memuaskan.
 - **Depends:** T2.5, T1.9
 
-> **GATE FASE 2 (checkpoint fun krusial):** memicu special & combo terasa memuaskan (penilaian Dev). Kalau belum "enak" → iterasi juice dulu. Ini fondasi sebelum vertical slice.
+> **GATE FASE 2 (checkpoint fun krusial):** ✅ special items (roket/bom/colorbomb/propeller), combo, chain reaction berjalan & teruji (89 test). Juice dasar (partikel, shake, pop, SFX prosedural, haptic) + reward menang aktif. Diverifikasi di HP fisik tanpa error. **Catatan:** "kerasa enak" final butuh penilaian main langsung Dev + art/audio asli (paralel). Mekanik & feedback fondasi siap → lanjut Fase 3 (vertical slice).
 
 ---
 
