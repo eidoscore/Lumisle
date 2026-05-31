@@ -1,6 +1,7 @@
 extends SceneTree
 ## Headless helper: rebuild GameScreen's level board with the same seed and print a
-## valid first swap (grid coords) so on-device tap testing can trigger a real match.
+## valid first swap (grid coords) + the top rows, so on-device tap testing can target
+## both a real match and a same-color (invalid) pair.
 
 func _init() -> void:
 	var w := 7
@@ -12,6 +13,11 @@ func _init() -> void:
 	var moves := b.find_possible_moves()
 	print("MOVES_FOUND=", moves.size())
 	for i in range(min(3, moves.size())):
-		var m = moves[i]
-		print("MOVE ", i, ": ", m)
+		print("MOVE ", i, ": ", moves[i])
+	# Cetak 3 baris atas untuk cari pasangan warna sama bersebelahan (swap invalid).
+	for y in range(min(3, h)):
+		var row := ""
+		for x in range(w):
+			row += str(b.get_color(x, y)) + " "
+		print("ROW ", y, ": ", row)
 	quit()

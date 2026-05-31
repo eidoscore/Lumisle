@@ -119,6 +119,8 @@
 >
 > **BUGFIX INPUT (2026-05-31):** Tap awal tidak sampai ke board. Dua akar masalah diperbaiki: (1) root `Control` GameScreen `mouse_filter=STOP` memakan input → di-set `mouse_filter=2` (IGNORE) di `game_screen.tscn`; (2) di `board_view.gd`, posisi tap pakai `make_input_local(event).position` (bukan `to_local`), dan input touch tidak lagi diproses terpisah — cukup `InputEventMouseButton` saja, karena `emulate_mouse_from_touch` (default ON) membuat sentuhan Android juga memunculkan mouse-event (kalau tidak: tiap tap dobel-proses → seleksi swap kacau). Diverifikasi di HP fisik: tap → grid benar, swap valid resolve (board berubah + langkah berkurang).
 >
+> **BUGFIX FEEDBACK + DRAG (2026-05-31):** User lapor "masih belum bisa drag / tap kaya cuma nyentuh". Akar masalah: (a) input hanya mendukung tap-tap (press saja), drag/geser tidak ditangani; (b) TIDAK ADA feedback visual sama sekali, jadi swap valid maupun invalid sama-sama "terasa mati" — termasuk swap warna-sama (mis. merah↔merah) yang MEMANG ditolak engine (tak bikin match), tapi tanpa animasi terlihat seperti rusak. Perbaikan di `board_view.gd`: (1) dukung **drag-to-swap** via `InputEventMouseMotion` (geser ke tetangga = swap) + tetap dukung tap-tap; (2) **outline highlight** (Line2D putih) pada tile terpilih; (3) animasi **slide** untuk swap valid & **bounce** untuk swap invalid (tween `_mm.set_instance_transform_2d`); (4) guard `_animating` agar input tidak tabrakan saat animasi. Diverifikasi di HP: highlight muncul saat tap (Δ25.9% area tile), swap valid (board Δ3.2% + langkah turun), swap warna-sama bounce & balik (Δ0%, langkah tetap = benar).
+>
 > **CATATAN DEV (penting):** Setiap menambah `class_name` baru, WAJIB jalankan `godot --headless --import` SEKALI sebelum test/jalankan, agar class ter-registrasi di cache global (kalau tidak: "Identifier not declared"/"does not extend GutTest").
 >
 > **CATATAN DEV (debug device):** `print()` TIDAK muncul di `adb logcat`; pakai `push_warning(...)` untuk trace di device. Stretch `aspect=keep` pada layar 1080×2400 → letterbox ~240px atas/bawah, jadi `device_y = game_y + 240`. Tools bantu di `tools/` (inspect_screenshot / find_buttons / diff_region) untuk uji tanpa PIL.
@@ -195,8 +197,8 @@
 - **Depends:** T1.7, T0.8
 
 ### T1.12 — Input swap (drag/tap) `S` — [x] SELESAI
-- **Output:** ✅ `_unhandled_input` → tap 2 tile bersebelahan → `resolve_swap`; tap jauh = seleksi ulang. Posisi via `make_input_local(event).position`. **Hanya tangani `InputEventMouseButton`** (touch Android otomatis jadi mouse-event via `emulate_mouse_from_touch`) agar tidak dobel-proses.
-- **DoD:** ✅ bisa main pakai sentuh/mouse (terverifikasi di HP fisik: tap → grid benar, swap valid resolve, langkah berkurang); swap invalid → refresh (bounce). Prasyarat: root GameScreen `mouse_filter=IGNORE` agar tap turun ke `_unhandled_input`.
+- **Output:** ✅ `_unhandled_input` → **drag-to-swap** (geser tile ke tetangga via `InputEventMouseMotion`) + **tap-tap** (tap tile tersorot → tap tetangga). Posisi via `make_input_local(event).position`. Hanya jalur mouse (touch Android otomatis jadi mouse-event via `emulate_mouse_from_touch`) agar tak dobel-proses. Feedback: outline highlight (Line2D) tile terpilih, animasi slide (valid) & bounce (invalid).
+- **DoD:** ✅ bisa main pakai sentuh/mouse (terverifikasi di HP fisik: drag valid resolve + langkah berkurang; swap warna-sama bounce & balik = ditolak benar; highlight muncul saat tap). Prasyarat: root GameScreen `mouse_filter=IGNORE` agar tap turun ke `_unhandled_input`. Guard `_animating` cegah input tabrakan saat animasi.
 - **Depends:** T1.11
 
 ### T1.13 — Win/lose minimal (via ObjectiveStub) + 1 level hardcoded `S` — [x] SELESAI
