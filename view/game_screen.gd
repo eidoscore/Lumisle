@@ -42,12 +42,21 @@ func _setup_level() -> void:
 	_board_view.on_tiles_cleared = Callable(self, "_on_tiles_cleared")
 	_board_view.level_won.connect(_on_level_won)
 	_board_view.move_consumed.connect(consume_move)
+	_board_view.swap_rejected.connect(_on_swap_rejected)
 
 
 ## Dipanggil BoardView tiap TILE_CLEARED → credit objektif + cek menang.
 func _on_tiles_cleared(action) -> void:
 	_objective.credit_from_event(action)
 	_update_hud()
+
+
+## Swap ditolak (tak bikin 3 sebaris) → kasih tahu pemain alasannya (edukasi aturan).
+func _on_swap_rejected() -> void:
+	if _instruction_label:
+		_instruction_label.visible = true
+		_instruction_label.text = "Belum cocok! Susun 3+ tile WARNA SAMA dalam satu garis. Ikuti panah kuning."
+		_instruction_label.modulate = Color(1, 0.7, 0.3)
 
 
 ## Setelah satu giliran selesai (dipanggil dari handler swap via BoardView).

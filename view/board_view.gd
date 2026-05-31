@@ -11,6 +11,7 @@ extends Node2D
 signal level_won
 signal level_lost
 signal move_consumed
+signal swap_rejected          # swap valid posisi tapi tak bikin match (untuk feedback edukasi)
 
 const TILE_SIZE := 110          # px per sel (termasuk gap)
 const GAP := 6
@@ -200,9 +201,9 @@ func _build_overlay() -> void:
 	_hint_b = _make_outline(Color(1, 0.9, 0.2, 0.95))
 	# Panah hint: garis tebal kuning dari tile a → b untuk menunjukkan ARAH swap.
 	_hint_arrow = Line2D.new()
-	_hint_arrow.width = 10.0
-	_hint_arrow.default_color = Color(1, 0.85, 0.1, 0.95)
-	_hint_arrow.z_index = 11
+	_hint_arrow.width = 22.0
+	_hint_arrow.default_color = Color(1, 0.8, 0.0, 1.0)
+	_hint_arrow.z_index = 30
 	_hint_arrow.visible = false
 	_hint_arrow.joint_mode = Line2D.LINE_JOINT_ROUND
 	_hint_arrow.begin_cap_mode = Line2D.LINE_CAP_ROUND
@@ -215,14 +216,14 @@ func _make_outline(col: Color) -> Panel:
 	var sz := float(TILE_SIZE - GAP)
 	p.size = Vector2(sz, sz)
 	p.pivot_offset = Vector2(sz, sz) * 0.5
-	p.z_index = 9
+	p.z_index = 25
 	p.visible = false
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0, 0, 0, 0)
-	sb.border_color = col
-	sb.set_border_width_all(6)
-	sb.set_corner_radius_all(6)
+	sb.bg_color = Color(col.r, col.g, col.b, 0.22)   # isi semi-transparan agar menonjol
+	sb.border_color = Color(1, 1, 1, 1)              # border putih tebal = kontras di semua warna
+	sb.set_border_width_all(10)
+	sb.set_corner_radius_all(8)
 	p.add_theme_stylebox_override("panel", sb)
 	add_child(p)
 	return p
@@ -332,17 +333,17 @@ func _show_hint() -> void:
 
 
 ## Gambar panah dari pusat tile a ke pusat tile b (menjelaskan: "geser a ke arah b").
+## Dibuat TEBAL & jelas supaya kebaca di HP (sebelumnya terlalu tipis).
 func _draw_hint_arrow(a: Vector2i, b: Vector2i) -> void:
 	var ca := _tile_center(a.x, a.y)
 	var cb := _tile_center(b.x, b.y)
 	var dir := (cb - ca).normalized()
-	# Pendekkan sedikit agar panah tidak menutupi seluruh tile.
-	var start := ca + dir * 18.0
-	var tip := cb - dir * 18.0
+	var start := ca + dir * 10.0
+	var tip := cb - dir * 8.0
 	var perp := Vector2(-dir.y, dir.x)
-	var head := 16.0
-	var h1 := tip - dir * head + perp * head * 0.6
-	var h2 := tip - dir * head - perp * head * 0.6
+	var head := 30.0
+	var h1 := tip - dir * head + perp * head * 0.7
+	var h2 := tip - dir * head - perp * head * 0.7
 	_hint_arrow.points = PackedVector2Array([start, tip, h1, tip, h2])
 	_hint_arrow.visible = true
 
@@ -495,10 +496,12 @@ func _do_swap(x1: int, y1: int, x2: int, y2: int) -> void:
 	if not will_match:
 		# Slide ke tetangga lalu balik — jelas "ditolak", warna tetap benar (board tak berubah).
 		AudioManager.play_sfx("invalid")
+		swap_rejected.emit()
 		await _anim_swap_visual(x1, y1, x2, y2)
 		await _anim_swap_visual(x2, y2, x1, y1)
 		_refresh_all()
-		_idle_time = 0.0
+		# Langsung tampilkan hint langkah valid (bantu pemain yang bingung).
+		_idle_time = HINT_DELAY
 		return
 
 	_input_enabled = false
