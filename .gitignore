@@ -21,6 +21,7 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
+__pycache__/
 
 # Engine binary (jangan masuk repo project — terlalu besar)
 /Godot_v*-stable_win64/

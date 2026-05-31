@@ -117,7 +117,11 @@
 
 > **STATUS FASE 1: ✅ SELESAI (core) — 2026-05-31.** 63 unit test lulus (11 script, 693 assert). Deploy & jalan di HP fisik (Xiaomi Mali-G57, ES 3.2): board render via MultiMesh, swap interaktif, cascade, win/lose, tanpa crash, FPS sehat. T1.16 (art) = paralel, masih placeholder kotak warna (cukup untuk gate fun internal). Gate fun → Fase 2 (juice) untuk "kerasa enak".
 >
+> **BUGFIX INPUT (2026-05-31):** Tap awal tidak sampai ke board. Dua akar masalah diperbaiki: (1) root `Control` GameScreen `mouse_filter=STOP` memakan input → di-set `mouse_filter=2` (IGNORE) di `game_screen.tscn`; (2) di `board_view.gd`, posisi tap pakai `make_input_local(event).position` (bukan `to_local`), dan input touch tidak lagi diproses terpisah — cukup `InputEventMouseButton` saja, karena `emulate_mouse_from_touch` (default ON) membuat sentuhan Android juga memunculkan mouse-event (kalau tidak: tiap tap dobel-proses → seleksi swap kacau). Diverifikasi di HP fisik: tap → grid benar, swap valid resolve (board berubah + langkah berkurang).
+>
 > **CATATAN DEV (penting):** Setiap menambah `class_name` baru, WAJIB jalankan `godot --headless --import` SEKALI sebelum test/jalankan, agar class ter-registrasi di cache global (kalau tidak: "Identifier not declared"/"does not extend GutTest").
+>
+> **CATATAN DEV (debug device):** `print()` TIDAK muncul di `adb logcat`; pakai `push_warning(...)` untuk trace di device. Stretch `aspect=keep` pada layar 1080×2400 → letterbox ~240px atas/bawah, jadi `device_y = game_y + 240`. Tools bantu di `tools/` (inspect_screenshot / find_buttons / diff_region) untuk uji tanpa PIL.
 
 ### T1.0 — Bekukan Ruleset Spec (dok 14) `S` — [x] SELESAI
 - **Tujuan:** kontrak resolusi board tunggal & eksplisit SEBELUM nulis core.
@@ -191,8 +195,8 @@
 - **Depends:** T1.7, T0.8
 
 ### T1.12 — Input swap (drag/tap) `S` — [x] SELESAI
-- **Output:** ✅ `_unhandled_input` (mouse + touch) → tap 2 tile bersebelahan → `resolve_swap`; tap jauh = seleksi ulang.
-- **DoD:** ✅ bisa main pakai sentuh/mouse (terverifikasi di HP); swap invalid → refresh (bounce).
+- **Output:** ✅ `_unhandled_input` → tap 2 tile bersebelahan → `resolve_swap`; tap jauh = seleksi ulang. Posisi via `make_input_local(event).position`. **Hanya tangani `InputEventMouseButton`** (touch Android otomatis jadi mouse-event via `emulate_mouse_from_touch`) agar tidak dobel-proses.
+- **DoD:** ✅ bisa main pakai sentuh/mouse (terverifikasi di HP fisik: tap → grid benar, swap valid resolve, langkah berkurang); swap invalid → refresh (bounce). Prasyarat: root GameScreen `mouse_filter=IGNORE` agar tap turun ke `_unhandled_input`.
 - **Depends:** T1.11
 
 ### T1.13 — Win/lose minimal (via ObjectiveStub) + 1 level hardcoded `S` — [x] SELESAI

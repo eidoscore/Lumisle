@@ -92,10 +92,12 @@ func _tile_pos(x: int, y: int) -> Vector2:
 func _unhandled_input(event: InputEvent) -> void:
 	if not _input_enabled or board == null:
 		return
+	# Catatan: dengan emulate_mouse_from_touch (default ON), sentuhan di Android
+	# juga menghasilkan InputEventMouseButton. Cukup tangani mouse-button saja agar
+	# tidak dobel-proses di perangkat (touch + emulated mouse). Berlaku untuk
+	# desktop (editor) maupun Android.
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		_handle_tap(to_local(event.position))
-	elif event is InputEventScreenTouch and event.pressed:
-		_handle_tap(to_local(event.position))
+		_handle_tap(make_input_local(event).position)
 
 
 func _handle_tap(local_pos: Vector2) -> void:
