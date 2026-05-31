@@ -55,10 +55,10 @@
 - **DoD:** ✅ semua folder ada + `.gdkeep` di folder kosong agar ter-commit.
 - **Depends:** T0.1
 
-### T0.3 — Git repo privat + .gitignore `XS` — [~] LOKAL SELESAI (push manual)
+### T0.3 — Git repo privat + .gitignore `XS` — [x] SELESAI
 - **Tujuan:** version control + backup (dok 11 D12).
-- **Output:** ✅ `git init` di `Lumisle/` (branch `main`), `.gitignore` Godot (`.godot/`, `export_presets.cfg`, `*.keystore`, engine folder, build artefak). ⬜ remote privat + push = **AKSI USER** (butuh kredensial GitHub/GitLab).
-- **DoD:** ✅ repo lokal siap, initial commit dilakukan; ⬜ push ke remote privat (manual).
+- **Output:** ✅ `git init` di `Lumisle/` (branch `main`), `.gitignore` Godot (`.godot/`, `export_presets.cfg`, `*.keystore`, engine folder, build artefak). ✅ remote `origin` (github.com:eidoscore/Lumisle.git) + initial commit ter-push ke `main`.
+- **DoD:** ✅ repo lokal + remote siap; commit Fase 0 ter-push; engine folder TIDAK ikut (di-ignore).
 - **Depends:** T0.1
 
 ### T0.4 — Setup GUT (unit test) `S` — [x] SELESAI
@@ -73,10 +73,10 @@
 - **DoD:** ✅ dokumen ada.
 - **Depends:** —
 
-### T0.6 — CI skeleton (GitHub Actions) `S` — [~] FILE SIAP (verifikasi saat push)
+### T0.6 — CI skeleton (GitHub Actions) `S` — [~] FILE SIAP & TER-PUSH (verifikasi run di GitHub)
 - **Tujuan:** build/test otomatis sejak awal (cegah panik export — dok 04 §12).
-- **Output:** ✅ `.github/workflows/ci.yml` (setup-godot 4.6.3 → import → GUT headless; android-build placeholder `continue-on-error`).
-- **DoD:** ⬜ CI jalan di push (butuh remote + push user). Workflow & command sudah identik dengan yang lulus lokal.
+- **Output:** ✅ `.github/workflows/ci.yml` (setup-godot 4.6.3 → import → GUT headless; android-build placeholder `continue-on-error`). Ter-push ke remote.
+- **DoD:** ⬜ verifikasi CI hijau di tab Actions GitHub (cek manual user di web). Command GUT identik dengan yang lulus lokal (9/9).
 - **Depends:** T0.3, T0.4
 - **Catatan:** ABI `arm64-v8a`; NDK/JDK17 sesuai Godot 4.6.3 (dok 04 §12).
 
