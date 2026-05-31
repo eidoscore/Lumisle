@@ -41,7 +41,7 @@
 **Tujuan:** fondasi teknis siap, semua tooling jalan, satu test dummy lulus.
 **Output fase:** project Godot bisa dibuka, struktur folder, git privat, GUT, CI skeleton.
 
-> **STATUS FASE 0: ✅ SELESAI (kode/lokal) — 2026-05-31.** 9 unit test lulus headless (smoke + verifikasi setup). Catatan blocker yang butuh aksi manual user ada di akhir fase.
+> **STATUS FASE 0: ✅ SELESAI PENUH — 2026-05-31.** 9 unit test lulus headless (smoke + verifikasi setup). Deploy & jalan di HP fisik (Xiaomi, Android 16, GPU Mali-G57, OpenGL ES 3.2 Compatibility). Semua T0.1-T0.9 done.
 
 ### T0.1 — Inisialisasi project Godot `XS` — [x] SELESAI
 - **Tujuan:** project Godot 4.6.3 baru, konfigurasi dasar mobile.
@@ -98,14 +98,15 @@
 - **DoD:** ✅ semua scene load & instantiate tanpa error (test_screens_instantiable); navigasi via tombol terhubung (main_menu↔level_map↔game↔meta↔settings). Transisi fade = ditambah saat polish.
 - **Depends:** T0.7
 
-### T0.9 — Android debug workflow `M` (gap review) — [ ] BLOCKER (butuh aksi user + HP fisik)
+### T0.9 — Android debug workflow `M` (gap review) — [x] SELESAI
 - **Tujuan:** export & deploy ke device lancar sejak awal.
-- **Output:** ⬜ `export_presets.cfg` (Android), JDK17 + Android SDK + export templates 4.6.3, adb USB debug, debug keystore. ABI `arm64-v8a`.
-- **DoD:** ⬜ project ter-deploy & jalan di 1 HP fisik; verifikasi GPU ES 3.0 + test bitmap font.
+- **Output:** ✅ `export_presets.cfg` (Android, ABI **arm64-v8a** only, package `com.eidoscore.lumisle`, permission internet/vibrate/network). JDK17 (`JAVA_HOME`=microsoft-jdk-17) + Android SDK (`ANDROID_HOME`) + **export templates 4.6.3.stable terpasang** + debug keystore (auto Godot) + adb. `export/` dibuat (gitignored).
+- **DoD:** ✅ APK debug (26.4 MB) ter-build, signed, aligned, verified → **install Success** ke device → **app jalan tanpa crash**.
+- **Device terverifikasi:** Xiaomi 2312FPCA6G, **Android 16, arm64-v8a, GPU Mali-G57 MC2, OpenGL ES 3.2** (Compatibility) — jauh di atas floor ES 3.0. Bitmap font belum diuji (belum ada teks font kustom; UI pakai default — diuji saat ada font kustom).
 - **Depends:** T0.1
-- **STATUS:** **Belum dikerjakan — perlu aksi user:** install JDK17 + Android SDK + export templates, dan sediakan HP Android (GPU ES 3.0). Bisa dikerjakan paralel; tidak memblok Fase 1 core (logika headless tidak butuh Android).
+- **Catatan:** Godot otomatis deteksi SDK/JDK dari env var. Build pakai template APK langsung (bukan gradle) — cukup untuk debug. Gradle custom build diaktifkan saat butuh plugin Android (AdMob/IAP, T8.x).
 
-> **GATE FASE 0:** ✅ project terbuka & jalan, ✅ GUT lulus (9 test), ✅ navigasi antar-screen jalan (scene load+instantiate), ⬜ git push (user), ⬜ deploy HP (T0.9, user). **Core Fase 1 boleh dimulai** (tidak bergantung T0.9).
+> **GATE FASE 0:** ✅ project terbuka & jalan, ✅ GUT lulus (9 test), ✅ navigasi antar-screen jalan (scene load+instantiate), ✅ git push ke origin/main, ✅ deploy & jalan di HP fisik (Android 16, ES 3.2). **FASE 0 SELESAI PENUH — lanjut Fase 1.**
 
 ---
 
