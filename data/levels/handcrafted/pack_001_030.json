@@ -1,0 +1,1315 @@
+{
+  "levels": [
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3
+      ],
+      "hand_crafted": true,
+      "id": "lvl_001",
+      "move_limit": 28,
+      "num_colors": 3,
+      "objectives": [
+        {
+          "target": 9,
+          "tile_color": 1,
+          "type": "collect"
+        }
+      ],
+      "obstacles": [],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1001,
+      "title": "Percikan 1",
+      "tutorial": true
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3
+      ],
+      "hand_crafted": true,
+      "id": "lvl_002",
+      "move_limit": 28,
+      "num_colors": 3,
+      "objectives": [
+        {
+          "target": 10,
+          "tile_color": 2,
+          "type": "collect"
+        }
+      ],
+      "obstacles": [],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1002,
+      "title": "Percikan 2",
+      "tutorial": true
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3
+      ],
+      "hand_crafted": true,
+      "id": "lvl_003",
+      "move_limit": 28,
+      "num_colors": 3,
+      "objectives": [
+        {
+          "target": 11,
+          "tile_color": 3,
+          "type": "collect"
+        }
+      ],
+      "obstacles": [],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1003,
+      "title": "Percikan 3",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "hand_crafted": true,
+      "id": "lvl_004",
+      "move_limit": 24,
+      "num_colors": 4,
+      "objectives": [
+        {
+          "target": 12,
+          "tile_color": 4,
+          "type": "collect"
+        }
+      ],
+      "obstacles": [],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1004,
+      "title": "Warna Bertambah 4",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "hand_crafted": true,
+      "id": "lvl_005",
+      "move_limit": 24,
+      "num_colors": 4,
+      "objectives": [
+        {
+          "target": 13,
+          "tile_color": 1,
+          "type": "collect"
+        }
+      ],
+      "obstacles": [],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1005,
+      "title": "Warna Bertambah 5",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "hand_crafted": true,
+      "id": "lvl_006",
+      "move_limit": 24,
+      "num_colors": 4,
+      "objectives": [
+        {
+          "target": 14,
+          "tile_color": 2,
+          "type": "collect"
+        }
+      ],
+      "obstacles": [],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1006,
+      "title": "Warna Bertambah 6",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "hand_crafted": true,
+      "id": "lvl_007",
+      "move_limit": 24,
+      "num_colors": 4,
+      "objectives": [
+        {
+          "target": 15,
+          "tile_color": 3,
+          "type": "collect"
+        }
+      ],
+      "obstacles": [],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1007,
+      "title": "Warna Bertambah 7",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "hand_crafted": true,
+      "id": "lvl_008",
+      "move_limit": 24,
+      "num_colors": 4,
+      "objectives": [
+        {
+          "target": 16,
+          "tile_color": 4,
+          "type": "collect"
+        }
+      ],
+      "obstacles": [],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1008,
+      "title": "Warna Bertambah 8",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "hand_crafted": true,
+      "id": "lvl_009",
+      "move_limit": 22,
+      "num_colors": 4,
+      "objectives": [
+        {
+          "target": 17,
+          "tile_color": 1,
+          "type": "collect"
+        }
+      ],
+      "obstacles": [],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1009,
+      "title": "Latihan 9",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "hand_crafted": true,
+      "id": "lvl_010",
+      "move_limit": 22,
+      "num_colors": 4,
+      "objectives": [
+        {
+          "target": 18,
+          "tile_color": 2,
+          "type": "collect"
+        }
+      ],
+      "obstacles": [],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1010,
+      "title": "Latihan 10",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "hand_crafted": true,
+      "id": "lvl_011",
+      "move_limit": 22,
+      "num_colors": 4,
+      "objectives": [
+        {
+          "target": 19,
+          "tile_color": 3,
+          "type": "collect"
+        }
+      ],
+      "obstacles": [],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1011,
+      "title": "Latihan 11",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_012",
+      "move_limit": 22,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 20,
+          "tile_color": 4,
+          "type": "collect"
+        }
+      ],
+      "obstacles": [],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1012,
+      "title": "Latihan 12",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_013",
+      "move_limit": 22,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 21,
+          "tile_color": 1,
+          "type": "collect"
+        }
+      ],
+      "obstacles": [],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1013,
+      "title": "Latihan 13",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_014",
+      "move_limit": 22,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 22,
+          "tile_color": 2,
+          "type": "collect"
+        }
+      ],
+      "obstacles": [],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1014,
+      "title": "Latihan 14",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_015",
+      "move_limit": 20,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 18,
+          "tile_color": 3,
+          "type": "collect"
+        },
+        {
+          "obstacle_type": 1,
+          "target": 4,
+          "type": "clear_obstacle"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 2,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              3
+            ],
+            [
+              3,
+              4
+            ],
+            [
+              4,
+              3
+            ],
+            [
+              4,
+              4
+            ]
+          ],
+          "type": "ice"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1015,
+      "title": "Es Pertama 15",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_016",
+      "move_limit": 20,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 18,
+          "tile_color": 4,
+          "type": "collect"
+        },
+        {
+          "obstacle_type": 1,
+          "target": 5,
+          "type": "clear_obstacle"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 2,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              3
+            ],
+            [
+              3,
+              4
+            ],
+            [
+              4,
+              3
+            ],
+            [
+              4,
+              4
+            ]
+          ],
+          "type": "ice"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1016,
+      "title": "Es Pertama 16",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_017",
+      "move_limit": 20,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 18,
+          "tile_color": 1,
+          "type": "collect"
+        },
+        {
+          "obstacle_type": 1,
+          "target": 6,
+          "type": "clear_obstacle"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 2,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              3
+            ],
+            [
+              3,
+              4
+            ],
+            [
+              4,
+              3
+            ],
+            [
+              4,
+              4
+            ]
+          ],
+          "type": "ice"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1017,
+      "title": "Es Pertama 17",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_018",
+      "move_limit": 20,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 18,
+          "tile_color": 2,
+          "type": "collect"
+        },
+        {
+          "obstacle_type": 1,
+          "target": 7,
+          "type": "clear_obstacle"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 2,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              3
+            ],
+            [
+              3,
+              4
+            ],
+            [
+              4,
+              3
+            ],
+            [
+              4,
+              4
+            ]
+          ],
+          "type": "ice"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1018,
+      "title": "Es Pertama 18",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_019",
+      "move_limit": 20,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 18,
+          "tile_color": 3,
+          "type": "collect"
+        },
+        {
+          "obstacle_type": 1,
+          "target": 8,
+          "type": "clear_obstacle"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 2,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              3
+            ],
+            [
+              3,
+              4
+            ],
+            [
+              4,
+              3
+            ],
+            [
+              4,
+              4
+            ]
+          ],
+          "type": "ice"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1019,
+      "title": "Es Pertama 19",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_020",
+      "move_limit": 20,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 18,
+          "tile_color": 4,
+          "type": "collect"
+        },
+        {
+          "obstacle_type": 1,
+          "target": 9,
+          "type": "clear_obstacle"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 2,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              3
+            ],
+            [
+              3,
+              4
+            ],
+            [
+              4,
+              3
+            ],
+            [
+              4,
+              4
+            ]
+          ],
+          "type": "ice"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1020,
+      "title": "Es Pertama 20",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_021",
+      "move_limit": 19,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 20,
+          "tile_color": 1,
+          "type": "collect"
+        },
+        {
+          "obstacle_type": 1,
+          "target": 6,
+          "type": "clear_obstacle"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 2,
+          "layer": 1,
+          "positions": [
+            [
+              2,
+              3
+            ],
+            [
+              4,
+              3
+            ]
+          ],
+          "type": "ice"
+        },
+        {
+          "hp": 1,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              5
+            ]
+          ],
+          "type": "crate"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1021,
+      "title": "Rintangan 21",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_022",
+      "move_limit": 19,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 20,
+          "tile_color": 2,
+          "type": "collect"
+        },
+        {
+          "obstacle_type": 1,
+          "target": 6,
+          "type": "clear_obstacle"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 2,
+          "layer": 1,
+          "positions": [
+            [
+              2,
+              3
+            ],
+            [
+              4,
+              3
+            ]
+          ],
+          "type": "ice"
+        },
+        {
+          "hp": 1,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              5
+            ]
+          ],
+          "type": "crate"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1022,
+      "title": "Rintangan 22",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_023",
+      "move_limit": 19,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 20,
+          "tile_color": 3,
+          "type": "collect"
+        },
+        {
+          "obstacle_type": 1,
+          "target": 6,
+          "type": "clear_obstacle"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 2,
+          "layer": 1,
+          "positions": [
+            [
+              2,
+              3
+            ],
+            [
+              4,
+              3
+            ]
+          ],
+          "type": "ice"
+        },
+        {
+          "hp": 1,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              5
+            ]
+          ],
+          "type": "crate"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1023,
+      "title": "Rintangan 23",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_024",
+      "move_limit": 19,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 20,
+          "tile_color": 4,
+          "type": "collect"
+        },
+        {
+          "obstacle_type": 1,
+          "target": 6,
+          "type": "clear_obstacle"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 2,
+          "layer": 1,
+          "positions": [
+            [
+              2,
+              3
+            ],
+            [
+              4,
+              3
+            ]
+          ],
+          "type": "ice"
+        },
+        {
+          "hp": 1,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              5
+            ]
+          ],
+          "type": "crate"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1024,
+      "title": "Rintangan 24",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_025",
+      "move_limit": 19,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 20,
+          "tile_color": 1,
+          "type": "collect"
+        },
+        {
+          "obstacle_type": 1,
+          "target": 6,
+          "type": "clear_obstacle"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 2,
+          "layer": 1,
+          "positions": [
+            [
+              2,
+              3
+            ],
+            [
+              4,
+              3
+            ]
+          ],
+          "type": "ice"
+        },
+        {
+          "hp": 1,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              5
+            ]
+          ],
+          "type": "crate"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1025,
+      "title": "Rintangan 25",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_026",
+      "move_limit": 18,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 1,
+          "type": "bring_down"
+        },
+        {
+          "target": 1500,
+          "type": "score"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 1,
+          "layer": 1,
+          "positions": [
+            [
+              1,
+              0
+            ],
+            [
+              5,
+              0
+            ]
+          ],
+          "type": "collectible"
+        },
+        {
+          "hp": 1,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              2
+            ]
+          ],
+          "type": "ice"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1026,
+      "title": "Ujian Pulau 26",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_027",
+      "move_limit": 18,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 1,
+          "type": "bring_down"
+        },
+        {
+          "target": 1900,
+          "type": "score"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 1,
+          "layer": 1,
+          "positions": [
+            [
+              1,
+              0
+            ],
+            [
+              5,
+              0
+            ]
+          ],
+          "type": "collectible"
+        },
+        {
+          "hp": 1,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              2
+            ]
+          ],
+          "type": "ice"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1027,
+      "title": "Ujian Pulau 27",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_028",
+      "move_limit": 18,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 2,
+          "type": "bring_down"
+        },
+        {
+          "target": 2300,
+          "type": "score"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 1,
+          "layer": 1,
+          "positions": [
+            [
+              1,
+              0
+            ],
+            [
+              5,
+              0
+            ]
+          ],
+          "type": "collectible"
+        },
+        {
+          "hp": 1,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              2
+            ]
+          ],
+          "type": "ice"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1028,
+      "title": "Ujian Pulau 28",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_029",
+      "move_limit": 18,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 2,
+          "type": "bring_down"
+        },
+        {
+          "target": 2700,
+          "type": "score"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 1,
+          "layer": 1,
+          "positions": [
+            [
+              1,
+              0
+            ],
+            [
+              5,
+              0
+            ]
+          ],
+          "type": "collectible"
+        },
+        {
+          "hp": 1,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              2
+            ]
+          ],
+          "type": "ice"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1029,
+      "title": "Ujian Pulau 29",
+      "tutorial": false
+    },
+    {
+      "board_height": 8,
+      "board_width": 7,
+      "color_subset": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hand_crafted": true,
+      "id": "lvl_030",
+      "move_limit": 18,
+      "num_colors": 5,
+      "objectives": [
+        {
+          "target": 3,
+          "type": "bring_down"
+        },
+        {
+          "target": 3100,
+          "type": "score"
+        }
+      ],
+      "obstacles": [
+        {
+          "hp": 1,
+          "layer": 1,
+          "positions": [
+            [
+              1,
+              0
+            ],
+            [
+              5,
+              0
+            ]
+          ],
+          "type": "collectible"
+        },
+        {
+          "hp": 1,
+          "layer": 1,
+          "positions": [
+            [
+              3,
+              2
+            ]
+          ],
+          "type": "ice"
+        }
+      ],
+      "rng_algorithm_version": 1,
+      "ruleset_version": 2,
+      "seed": 1030,
+      "title": "Ujian Pulau 30",
+      "tutorial": false
+    }
+  ],
+  "schema_version": 1
+}

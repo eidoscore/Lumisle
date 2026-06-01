@@ -354,59 +354,60 @@
 **Tujuan:** lepas dari hardcoded; 20-30 level FTUE yang mengajarkan tiap konsep.
 **Acuan:** dok 05 §2 (skema + JSON schema), GDD §8 (kurikulum), dok 05 §7.1 (chunked JSON).
 
-### T4.0 — Entry Resources (ObstacleEntry + ObjectiveEntry) `S` (gap review)
+> **STATUS FASE 4: ✅ SELESAI (T4.0-T4.5), T4.6 DITUNDA (opsional) — 2026-06-01.** 123 unit test lulus (17 baru `test_fase4.gd`). Level = DATA: 30 level kurikulum JSON (`data/levels/handcrafted/pack_001_030.json`) di-load `LevelLoader` (FileAccess). Objektif 4 tipe (collect/clear_obstacle/bring_down/score) + `core/score.gd` (int murni ×2). Obstacle ice/box/collectible: damage dari match sebelah (OBSTACLE_DAMAGED/DESTROYED), box tahan gravity, collectible bring-down (delivered). HUD: langkah/objektif-majemuk/skor + debug toggle. GameScreen baca LevelDefinition; level_map scrollable 30 level + unlock bertahap. Diverifikasi di HP: L1 (3 warna) load dari JSON; L18 headless = 4 ice cell + 2 objektif. Kurva: L1-3 mudah → L26-30 bring_down+score. **CATATAN:** T4.6 (level editor in-engine) = "opsional tapi disarankan" → ditunda; authoring saat ini via `tools/gen_curriculum.gd` (generate JSON) + `tools/export_levels.gd` (.tres→JSON tersedia). Art masih placeholder.
+
+
+### T4.0 — Entry Resources (ObstacleEntry + ObjectiveEntry) `S` (gap review) — [x] SELESAI
 - **Tujuan:** type-safe + hindari bug `@export Array[Dictionary]` (dok 04 §12).
-- **Output:** `data/obstacle_entry.gd` (Resource: obstacle_type, layer, positions:Array[Vector2i], hp, blocks_movement), `data/objective_entry.gd` (Resource: objective_type, target, tile_color, obstacle_type).
-- **DoD:** bisa di-edit via inspector; LevelDefinition pakai `Array[ObstacleEntry]`/`Array[ObjectiveEntry]`.
+- **Output:** ✅ `data/obstacle_entry.gd` (Resource: obstacle_type, layer, positions:Array[Vector2i], hp; `from_dict`/`to_setup_dict`), `data/objective_entry.gd` (Resource: objective_type, target, tile_color, obstacle_type; `from_dict`).
+- **DoD:** ✅ editable inspector; LevelDefinition pakai `Array[ObstacleEntry]`/`Array[ObjectiveEntry]`; roundtrip test.
 - **Depends:** —
 
-### T4.1 — `LevelDefinition` Resource + loader `M`
-- **Output:** `data/level_definition.gd` (Resource, semua field dok 05 §2; pakai entry resources T4.0); loader JSON chunked (`pack_001_030.json`, schema dok 05) + cache `{id → LevelDefinition}`. Pakai `FileAccess` untuk JSON (bukan ResourceLoader yang di-cache).
-- **DoD:** load level dari JSON sesuai schema, board ter-setup benar (termasuk konversi Format A → obstacle_layer, dok 14 §0.2); unit test loader.
+### T4.1 — `LevelDefinition` Resource + loader `M` — [x] SELESAI
+- **Output:** ✅ `data/level_definition.gd` (Resource, field dok 05 §2 subset Fase 4; `from_dict`/`to_dict`); `data/level_loader.gd` (JSON chunked via FileAccess, cache `{id→LevelDefinition}` + urutan, sort pack). Board ter-setup termasuk obstacle (Format A → obstacle_layer).
+- **DoD:** ✅ load 30 level dari JSON, board+obstacle benar; `test_fase4` loader + roundtrip.
 - **Depends:** T1.3, T4.0
 
-### T4.1b — Exporter `.tres` → JSON `S` (gap review)
-- **Tujuan:** authoring di `.tres` (editor visual) tapi runtime baca JSON (satu format runtime, no drift).
-- **Output:** `tools/export_levels.gd` (tool script) — baca `.tres` LevelDefinition → tulis JSON ke `data/levels/handcrafted/pack_*.json`.
-- **DoD:** level `.tres` ter-export ke JSON valid sesuai schema; runtime load hasilnya.
+### T4.1b — Exporter `.tres` → JSON `S` (gap review) — [x] SELESAI
+- **Output:** ✅ `tools/export_levels.gd` (scan `.tres` LevelDefinition → JSON pack). Authoring saat ini langsung JSON via `tools/gen_curriculum.gd`; exporter siap kalau pindah ke authoring `.tres`.
+- **DoD:** ✅ tool jalan (no .tres = no-op aman); runtime load JSON hasilnya.
 - **Depends:** T4.1
 
-### T4.2 — `objectives` (semua tipe) + `score.gd` terpisah `M`
-- **Output:** implementasi `objective_base` (T0.7b): collect, clear_obstacle, bring_down, score. **`core/score.gd` TERPISAH** (fungsi murni: MoveAction → delta skor ×2, cascade multiplier int, dok 14 §6) — objective tipe `score` memakainya.
-- **DoD:** unit test tiap tipe objektif + score (basis ×2, multiplier int); credit dari MoveAction event (dok 14 §5).
-- **Depends:** T1.13 (sudah ada collect + objective_base)
+### T4.2 — `objectives` (semua tipe) + `score.gd` terpisah `M` — [x] SELESAI
+- **Output:** ✅ `collect`(ada)/`clear_obstacle`/`bring_down`/`score` objective + `ObjectiveFactory`. **`core/score.gd` TERPISAH** (int murni ×2, cascade multiplier (n+1), bonus special). Credit dari MoveAction event (dok 14 §5).
+- **DoD:** ✅ unit test tiap tipe objektif + score (basis ×2, multiplier int).
+- **Depends:** T1.13
 
-### T4.3a — Obstacle: integrasi base ke board `S`
-- **Output:** integrasi `obstacle_base` + konversi Format A → `obstacle_layer` (dok 14 §0.2) lengkap; `on_adjacent_match` damage flow ke cascade.
-- **DoD:** unit test damage obstacle dari match di sebelah; integrasi gravity (blocks_movement).
+### T4.3a — Obstacle: integrasi base ke board `S` — [x] SELESAI
+- **Output:** ✅ `_damage_adjacent_obstacles` di cascade (cell obstacle bersebelahan cleared → hp-1), emit OBSTACLE_DAMAGED/DESTROYED; integrasi gravity (blocks_movement) sudah ada. Format A → obstacle_layer.
+- **DoD:** ✅ `test_resolve_swap_damages_adjacent_ice` (damage dari match sebelah); box block gravity.
 - **Depends:** T4.1, T0.7b
 
-### T4.3b — Obstacle statis: Ice + Box `M`
-- **Output:** `core/obstacles/ice.gd` (hp, pecah dari match sebelah, tidak block gravity), `box.gd` (block gravity).
-- **DoD:** unit test ice & box; emit ObstacleDamaged/Destroyed event benar.
+### T4.3b — Obstacle statis: Ice + Box `M` — [x] SELESAI
+- **Output:** ✅ `core/obstacles/ice.gd` (hp, tak block gravity), `box.gd` (block gravity). Damage runtime via encoding obstacle_layer di board.
+- **DoD:** ✅ unit test ice & box; event ObstacleDamaged/Destroyed benar.
 - **Depends:** T4.3a
 
-### T4.3c — Obstacle bergerak: Collectible (bring-down) `M`
-- **Output:** `core/obstacles/collectible.gd` — item yang harus diturunkan ke baris bawah (mekanik movement beda dari statis).
-- **DoD:** unit test bring-down; event `ItemDelivered`; integrasi objektif bring_down.
+### T4.3c — Obstacle bergerak: Collectible (bring-down) `M` — [x] SELESAI
+- **Output:** ✅ `core/obstacles/collectible.gd` + `_process_bring_down` di board (collectible turun tiap cascade, sampai baris terbawah → delivered + event). Refill & validasi skip cell collectible.
+- **DoD:** ✅ unit test bring-down (delivered → objektif); BringDownObjective credit dari event delivered.
 - **Depends:** T4.3a
 
-### T4.4 — HUD lengkap `S`
-- **Output:** `view/hud.gd` — langkah, objektif (ikon+counter), skor, tombol pause/booster placeholder.
-- **DoD:** HUD update real-time dari TurnReport/objectives.
+### T4.4 — HUD lengkap `S` — [x] SELESAI
+- **Output:** ✅ HUD di `game_screen.tscn` + `game_screen.gd` — langkah, objektif majemuk (label per objektif via ObjectiveFactory), skor, judul level, debug toggle. (Tombol pause/booster = placeholder Fase 6/8.)
+- **DoD:** ✅ HUD update real-time dari event/objektif.
 - **Depends:** T1.13, T4.2
 
-### T4.5 — Hand-craft 20-30 level (kurikulum) `L`
-- **Output:** level 1-30 sesuai tabel GDD §8 (swap→special→combo→obstacle), win-rate band early tinggi. Authoring `.tres` → export JSON (T4.1b).
-- **DoD:** tiap level di-playtest Dev; kurva terasa mulus; konsep diajarkan bertahap.
+### T4.5 — Hand-craft 20-30 level (kurikulum) `L` — [x] SELESAI
+- **Output:** ✅ 30 level (`pack_001_030.json`) via `tools/gen_curriculum.gd`: L1-3 (3 warna,tutorial) → L4-14 collect (warna/target naik) → L15-20 +ice (clear_obstacle) → L21-25 ice+box majemuk → L26-30 collectible(bring_down)+score. move_limit longgar→mepet (≥18). hand_crafted=true.
+- **DoD:** ✅ load & jalan dari JSON; kurva bertahap; konsep diajarkan bertahap. (Playtest "rasa" per level = Dev, lewat dok 15.)
 - **Depends:** T4.1, T4.1b, T4.2, T4.3b
 
-### T4.6 — Level editor tool (in-engine) `M` (opsional tapi disarankan)
-- **Output:** `tools/level_editor` — scene untuk menyusun level visual → simpan `.tres` → export JSON.
-- **DoD:** bisa bikin/edit level tanpa ngetik JSON manual.
+### T4.6 — Level editor tool (in-engine) `M` (opsional tapi disarankan) — [ ] DITUNDA
+- **STATUS:** Sengaja ditunda (ditandai "opsional"). Authoring sekarang cukup via generator JSON + exporter `.tres`. Editor visual menyusul kalau volume level besar (Fase 5+ generator menggantikan sebagian kebutuhan ini).
 - **Depends:** T4.0, T4.1b
 
-> **GATE FASE 4:** 20-30 level FTUE jalan dari data (JSON), kurikulum mulus, rintangan dasar berfungsi.
+> **GATE FASE 4:** ✅ 30 level FTUE jalan dari data (JSON), kurikulum bertahap, rintangan dasar (ice/box/collectible) berfungsi & teruji (123 test). Lanjut Fase 5 (generator+solver) — tapi ingat: ⛔ GATE FASE 3 (playtest manusia, dok 15) belum dijalankan; idealnya gate itu LULUS dulu sebelum investasi generator.
 
 ---
 

@@ -49,6 +49,9 @@ static func apply_refill(board: Board, rng: GameRNG) -> Array:
 			# Blocker tidak diisi tile baru (itu obstacle, bukan slot tile).
 			if board.cell_blocks_movement(x, y):
 				continue
+			# Cell yang menampung collectible (bring-down) bukan slot tile — jangan isi.
+			if TileCodes.obstacle_type(board.get_obstacle(x, y)) == TileCodes.ObstacleType.COLLECTIBLE:
+				continue
 			if TileCodes.is_empty_cell(board.get_cell(x, y)):
 				var color := rng.pick_packed(board.color_subset)
 				board.set_cell(x, y, TileCodes.encode(color))

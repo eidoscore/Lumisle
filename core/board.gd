@@ -381,6 +381,11 @@ func _resolve_cascade_step(matches: Array, cascade_index: int, report: TurnRepor
 		for cpos in cleared_positions:
 			set_cell(int(cpos.x), int(cpos.y), TileCodes.EMPTY)
 
+	# T4.3a — Damage obstacle yang BERSEBELAHAN dgn cell yang baru di-clear (dok 14 §5).
+	# Ice pecah dari match di sebelah; box/crate juga. Collectible (bring-down) TIDAK
+	# di-damage dari match — ia turun & "delivered" (ditangani di gravity bring-down).
+	_damage_adjacent_obstacles(cleared_positions, report)
+
 	# Tempatkan special yang dibuat (warna ikut warna match agar colorbomb tahu target).
 	for c in created:
 		var cp: Vector2i = c["pos"]
@@ -394,16 +399,110 @@ func _resolve_cascade_step(matches: Array, cascade_index: int, report: TurnRepor
 	for e in fall_events:
 		report.add_step(e)
 
+	# T4.3c — Bring-down: collectible turun mengikuti gravity; kalau sampai baris
+	# playable terbawah → delivered (hilang + event untuk objektif bring_down).
+	_process_bring_down(report)
+
 	# Refill → event TileSpawned.
 	var spawn_events := Gravity.apply_refill(self, rng)
 	for e in spawn_events:
 		report.add_step(e)
 
 
+## T4.3c — Proses bring-down collectible. Per kolom: collectible "jatuh" melewati
+## sel kosong di bawahnya; kalau mencapai baris playable terbawah → delivered.
+## Model: collectible disimpan di obstacle_layer; cell.color cell itu EMPTY (slot item).
+func _process_bring_down(report: TurnReport) -> void:
+	for x in range(width):
+		# Cari baris playable terbawah di kolom ini (yang bukan blocker).
+		var bottom := -1
+		for y in range(height - 1, -1, -1):
+			if is_playable(x, y) and not _cell_is_box(x, y):
+				bottom = y
+				break
+		if bottom < 0:
+			continue
+		# Dari bawah ke atas: pindahkan collectible turun ke sel kosong di bawahnya.
+		for y in range(height - 1, -1, -1):
+			if not is_playable(x, y):
+				continue
+			var enc := get_obstacle(x, y)
+			if TileCodes.obstacle_type(enc) != TileCodes.ObstacleType.COLLECTIBLE:
+				continue
+			# Cari posisi turun terjauh (sel di bawah yang kosong tile & tanpa obstacle).
+			var ny := y
+			while ny + 1 <= bottom and is_playable(x, ny + 1) \
+					and TileCodes.is_empty_cell(get_cell(x, ny + 1)) \
+					and get_obstacle(x, ny + 1) == TileCodes.OBS_NONE:
+				ny += 1
+			if ny != y:
+				obstacle_layer[idx(x, ny)] = enc
+				obstacle_layer[idx(x, y)] = TileCodes.OBS_NONE
+				report.add_step(MoveAction.make(
+					MoveAction.Type.TILE_FELL, [], {"from": Vector2i(x, y), "to": Vector2i(x, ny)}
+				))
+			# Kalau sudah di baris terbawah → delivered.
+			if ny == bottom:
+				obstacle_layer[idx(x, ny)] = TileCodes.OBS_NONE
+				report.add_step(MoveAction.make(
+					MoveAction.Type.OBSTACLE_DESTROYED, [Vector2i(x, ny)],
+					{"pos": Vector2i(x, ny), "type": TileCodes.ObstacleType.COLLECTIBLE, "delivered": true}
+				))
+
+
+## Apakah cell punya obstacle box/crate (menahan gerakan)?
+func _cell_is_box(x: int, y: int) -> bool:
+	return TileCodes.obstacle_type(get_obstacle(x, y)) == TileCodes.ObstacleType.CRATE
+
+
 ## Terapkan combo special+special (dok 14 §3.2): tandai area efek untuk di-clear
 ## pada step cascade pertama (lewat _pending_clear, masuk alur biasa).
 func _apply_combo(pivot: Vector2i, special_a: int, special_b: int, _report: TurnReport) -> void:
 	_pending_clear = SpecialItems.combo_affected_cells(self, pivot, special_a, special_b)
+
+
+## T4.3a — Damage obstacle yang bersebelahan (ortogonal) dgn cell yang baru di-clear.
+## Ice & crate kena damage; collectible TIDAK (ia bring-down, bukan dipecah match).
+## Emit OBSTACLE_DAMAGED / OBSTACLE_DESTROYED (dok 14 §5). Hp dari encoding obstacle_layer.
+func _damage_adjacent_obstacles(cleared_positions: Array, report: TurnReport) -> void:
+	if cleared_positions.is_empty():
+		return
+	# Kumpulkan cell obstacle yang tersentuh (dedupe), maksimal 1 damage per giliran-step.
+	var hit := {}
+	for cpos in cleared_positions:
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var p: Vector2i = cpos + d
+			if not in_bounds(p.x, p.y):
+				continue
+			var enc := get_obstacle(p.x, p.y)
+			if enc == TileCodes.OBS_NONE:
+				continue
+			var otype := TileCodes.obstacle_type(enc)
+			# Collectible tidak dipecah oleh match (di-handle bring-down via gravity).
+			if otype == TileCodes.ObstacleType.COLLECTIBLE:
+				continue
+			hit[p] = true
+	for p in hit:
+		_apply_obstacle_damage(p, report)
+
+
+## Kurangi hp obstacle di (p) sebanyak 1; emit event; hapus kalau hp habis.
+func _apply_obstacle_damage(p: Vector2i, report: TurnReport) -> void:
+	var enc := get_obstacle(p.x, p.y)
+	var otype := TileCodes.obstacle_type(enc)
+	var hp := TileCodes.obstacle_hp(enc)
+	var layer := TileCodes.obstacle_layer_of(enc)
+	hp -= 1
+	if hp <= 0:
+		obstacle_layer[idx(p.x, p.y)] = TileCodes.OBS_NONE
+		report.add_step(MoveAction.make(
+			MoveAction.Type.OBSTACLE_DESTROYED, [p], {"pos": p, "type": otype}
+		))
+	else:
+		obstacle_layer[idx(p.x, p.y)] = TileCodes.encode_obstacle(otype, hp, layer)
+		report.add_step(MoveAction.make(
+			MoveAction.Type.OBSTACLE_DAMAGED, [p], {"pos": p, "type": otype, "hp_left": hp}
+		))
 
 
 # ---------------------------------------------------------------------------
@@ -440,6 +539,9 @@ func _validate_board_state() -> bool:
 			if not is_playable(x, y):
 				continue
 			if cell_blocks_movement(x, y):
+				continue
+			# Cell yang menampung collectible (bring-down) sengaja kosong warnanya — skip.
+			if TileCodes.obstacle_type(get_obstacle(x, y)) == TileCodes.ObstacleType.COLLECTIBLE:
 				continue
 			if TileCodes.is_empty_cell(get_cell(x, y)):
 				return false

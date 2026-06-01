@@ -36,9 +36,19 @@ text = "Langkah: 20"
 offset_left = 60.0
 offset_top = 185.0
 offset_right = 1020.0
-offset_bottom = 235.0
-theme_override_font_sizes/font_size = 36
+offset_bottom = 255.0
+theme_override_font_sizes/font_size = 30
 text = "Objektif: 0/25"
+autowrap_mode = 2
+
+[node name="ScoreLabel" type="Label" parent="HUD"]
+offset_left = 560.0
+offset_top = 130.0
+offset_right = 1020.0
+offset_bottom = 180.0
+theme_override_font_sizes/font_size = 38
+horizontal_alignment = 2
+text = "Skor: 0"
 
 [node name="InstructionLabel" type="Label" parent="HUD"]
 offset_left = 60.0
@@ -76,9 +86,9 @@ text = "DBG"
 [node name="DebugLabel" type="Label" parent="HUD"]
 visible = false
 offset_left = 560.0
-offset_top = 130.0
+offset_top = 270.0
 offset_right = 1020.0
-offset_bottom = 290.0
+offset_bottom = 430.0
 theme_override_font_sizes/font_size = 26
 horizontal_alignment = 2
 text = ""
