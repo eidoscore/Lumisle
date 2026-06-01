@@ -172,6 +172,19 @@ func board_hash() -> int:
 	return h
 
 
+## Salinan dalam (deep) board untuk evaluasi move tanpa memutasi aslinya (T5.3 solver
+## lookahead). RNG TIDAK ikut (caller inject saat resolve). State penuh disalin.
+func clone() -> Board:
+	var b := Board.new()
+	b.width = width
+	b.height = height
+	b.cells = cells.duplicate()
+	b.playable_mask = playable_mask.duplicate()
+	b.obstacle_layer = obstacle_layer.duplicate()
+	b.color_subset = color_subset.duplicate()
+	return b
+
+
 # ---------------------------------------------------------------------------
 # T1.7 — resolve_swap + cascade loop (dok 14 §1)
 # T1.8 — error handling + validasi
@@ -572,9 +585,12 @@ func find_possible_moves() -> Array:
 
 
 ## Cek (tanpa mengubah state permanen) apakah swap (x1,y1)<->(x2,y2) menghasilkan match.
+## CEPAT: setelah swap, match hanya MUNGKIN melibatkan salah satu dari 2 cell yang
+## ditukar → cukup cek lokal di kedua cell (MatchDetector.match_at), bukan pindai
+## seluruh papan (krusial utk perf solver, dok 05 §6.1). Prasyarat: papan ter-resolve.
 func _swap_creates_match(x1: int, y1: int, x2: int, y2: int) -> bool:
 	_swap_cells(x1, y1, x2, y2)
-	var has_match := MatchDetector.has_any_match(self)
+	var has_match := MatchDetector.match_at(self, x1, y1) or MatchDetector.match_at(self, x2, y2)
 	_swap_cells(x1, y1, x2, y2)  # kembalikan
 	return has_match
 

@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="DifficultyCurve" load_steps=2 format=3 uid="uid://b0lumisledifcurve01"]
+
+[ext_resource type="Script" path="res://core/generator/difficulty_curve.gd" id="1_difcurve"]
+
+[resource]
+script = ExtResource("1_difcurve")
+band_ftue_max = 10
+band_learning_max = 30
+band_practice_max = 60
+band_challenge_max = 100
+winrate_ftue = Vector2(0.85, 0.95)
+winrate_learning = Vector2(0.8, 0.9)
+winrate_practice = Vector2(0.7, 0.85)
+winrate_challenge = Vector2(0.6, 0.8)
+winrate_endgame = Vector2(0.45, 0.7)
+board_w_min = 7
+board_w_max = 8
+board_h_min = 7
+board_h_max = 9
+colors_min = 4
+colors_max = 6
+move_ratio_easy = 2.0
+move_ratio_hard = 1.25
+clears_per_move_est = 3.5
+obstacle_density_max = 0.18
+jitter_strength = 0.12
+spike_every = 9
+spike_boost = 0.18
+relief_after_spike = 0.1

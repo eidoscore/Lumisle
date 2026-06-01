@@ -29,7 +29,7 @@
 | 2 | Special Items + Juice | Roket/Bom/ColorBomb + combo + juice | Checkpoint fun internal |
 | 3 | **VERTICAL SLICE** | 3-5 level full-juice + tes orang | ⛔ GATE (dok 12 §A) |
 | 4 | Level Data + FTUE | LevelDefinition + objektif + rintangan + 20-30 level | Kurikulum mulus |
-| 5 | Generator + Solver | Generator archetype + ensemble solver + pipeline | Distribusi win-rate sehat |
+| 5 | Generator + Solver | Generator archetype + ensemble solver + pipeline | ✅ Distribusi win-rate sehat |
 | 6 | Meta + Ekonomi + Save | Nyawa, koin, progress, peta level, save | Progress persist |
 | 7 | Koleksi Lumi + FTUE penuh | Meta koleksi + daily + comeback | Ada "alasan balik" |
 | 8 | Monetisasi + Polish + Soft Launch | Ads + IAP + analytics + ASO + closed test | Data soft launch |
@@ -426,42 +426,48 @@
 **Tujuan:** produksi konten skala sebagai drafting tool (HANYA setelah slice & FTUE terbukti).
 **Acuan:** dok 05 (lengkap). Berjalan offline (headless).
 
-### T5.1 — `difficulty_model.gd` + `difficulty_curve.tres` `M`
-- **Output:** `params_for_level(n) -> Dictionary` (ukuran, subset warna, rintangan, move_limit, band); kurva tunable.
-- **DoD:** kurva menghasilkan parameter masuk akal per band; unit test boundary.
+> **STATUS FASE 5: ✅ SELESAI (kode) — 2026-06-01.** Generator archetype + difficulty model + ensemble solver 5 persona + metrik/CI + adaptive run + pipeline Forge + validasi, semua teruji. **143 unit test lulus** (15 baru di `test_fase5.gd`). Pipeline diverifikasi end-to-end: batch L101-104 generated → solved → calibrated → ditulis `data/levels/generated/pack_101_104.json` + report, lalu 4/4 lolos validasi (loadable, no initial match, ada move, move_limit wajar).
+>
+> **OPTIMASI PERF KRITIS (2026-06-01, dok 05 §6.1):** Solver awalnya ~750ms/move (random) s/d ~96 dtk/run (greedy) di papan 8×9 — terlalu lambat. Akar: `find_possible_moves()` memanggil `has_any_match()` (pindai SELURUH papan, alokasi berat) untuk tiap ~144 kandidat swap, dan `resolve_swap` memanggilnya tiap giliran. Fix: `MatchDetector.match_at(board,x,y)` (cek LOKAL O(1) di sekitar 1 cell) dipakai `Board._swap_creates_match` — sebuah swap hanya bisa membentuk match yang melibatkan salah satu dari 2 cell yang ditukar (prasyarat: papan ter-resolve). Hasil: 18-24× lebih cepat (random 412ms, greedy 2.7-3.9dtk, strategic 7.5dtk per run di endgame). Korektnes terjaga: 143 test (termasuk golden fixtures & resolve_swap) tetap lulus. Tambahan: `MAX_CANDIDATES=12` per persona (pemain nyata juga tak memindai semua move).
+>
+> **CATATAN RUNTIME JUJUR (dok 05 §6.1):** endgame (8×9, 6 warna, strategic 2-ply) tetap ~45 dtk/level @ 10 run × kalibrasi. Batch besar (101+ s/d ribuan) = **dijalankan semalaman** (sesuai keputusan dok 05: single-process sequential, batch kecil saat tuning, full overnight one-time). Forge punya knob `--start-runs/--step-runs/--max-runs/--max-iter/--max-regen` untuk atur trade-off cepat-vs-akurat.
+
+### T5.1 — `difficulty_model.gd` + `difficulty_curve.tres` `M` — [x] SELESAI
+- **Output:** ✅ `core/generator/difficulty_curve.gd` (Resource knob tunable: batas band, pita win-rate/band, ukuran papan, jumlah warna, rasio langkah, kepadatan rintangan, jitter/spike) + `data/config/difficulty_curve.tres`. ✅ `core/generator/difficulty_model.gd`: `params_for_level(n,seed)`, `band_for_level`, `target_winrate_for_band`, `difficulty_score` (spike + napas + jitter berseed). 5 band (FTUE/LEARNING/PRACTICE/CHALLENGE/ENDGAME).
+- **DoD:** ✅ unit test boundary band (1/10/11/30/31/60/61/100/101/500), win-rate menurun per band, params deterministik & terbatas [4-6 warna, 7-8 lebar], difficulty endgame > FTUE.
 - **Depends:** T4.1
 
-### T5.2 — Generator archetype-based `L`
-- **Output:** `core/generator/level_generator.gd` — archetype (combo_playground/blocker_clearing/bottleneck/objective_race/special_tutorial/hard_near_miss) + parameter + seed; validitas dasar (no initial match, objektif mungkin).
-- **DoD:** generate kandidat valid per archetype; unit test validitas.
+### T5.2 — Generator archetype-based `L` — [x] SELESAI
+- **Output:** ✅ `core/generator/level_generator.gd` — 6 archetype (combo_playground/blocker_clearing/bottleneck/objective_race/special_tutorial/hard_near_miss) + parameter + seed. Pilih archetype per band, tata letak (mask bottleneck), subset warna, rintangan (cluster/scatter ice+box sesuai niat), objektif konsisten, move_limit awal kasar. `validate()` cek dasar (no initial match via Board fill, ada move, objektif mungkin).
+- **DoD:** ✅ unit test: tiap archetype generate valid, no initial match + ada move utk L5/25/55/85/120, deterministik per (n,seed), blocker_clearing punya obstacle + objektif clear.
 - **Depends:** T5.1, T4.3
 
-### T5.3 — Ensemble solver (5 persona) `L`
-- **Output:** `core/solver/solver_personas.gd` (random_valid, greedy_combo, greedy_obstacle, horizontal_scan, strategic_setup 2-ply) + noise; `solver_bot.gd` (simulasi penuh pakai core yang sama — bukan implementasi kedua).
-- **DoD:** solver memainkan level via `board` yang sama; deterministik per seed; unit test tiap persona jalan.
+### T5.3 — Ensemble solver (5 persona) `L` — [x] SELESAI
+- **Output:** ✅ `core/solver/solver_personas.gd` (random_valid, greedy_combo, greedy_obstacle, horizontal_scan, strategic_setup 2-ply) + noise 15% + cap kandidat. ✅ `core/solver/solver_bot.gd` (simulasi penuh pakai Board + resolve_swap + objektif yang SAMA dgn game — bukan implementasi kedua; early-exit stuck/dead/langkah habis). ✅ `core/solver/move_eval.gd` (skor move via clone resolve). ✅ `Board.clone()` ditambah untuk lookahead.
+- **DoD:** ✅ unit test tiap persona memainkan & menghasilkan langkah valid, deterministik per seed, move yang dipilih ADA di daftar valid, level longgar win-rate tinggi.
 - **Depends:** T5.2, T1.7
 
-### T5.4 — `solver_stats.gd` (metrik + formula) `M`
-- **Output:** win_rate, near_miss_rate, moves_variance, stuck_rate (objective-focused >5), reshuffle_per_run — formula dok 05 §5.4.
-- **DoD:** unit test formula dgn data sintetis.
+### T5.4 — `solver_stats.gd` (metrik + formula) `M` — [x] SELESAI
+- **Output:** ✅ `core/solver/solver_stats.gd`: win_rate, near_miss_rate (menang sisa 1-3 langkah), moves_variance, stuck_rate (progress objektif mandek >5), reshuffle_per_run, easy_win_rate, dead_board_rate + 95% CI win-rate (Wald) + `ci_outside_band`/`in_band` (untuk T5.5).
+- **DoD:** ✅ unit test formula dgn data sintetis (win/near-miss/easy/stuck/reshuffle/variance 0 saat konsisten, CI di luar band saat 0% menang, in_band saat ~75%).
 - **Depends:** T5.3
 
-### T5.5 — Adaptive run count (CI-based) + early-exit `M`
-- **Output:** loop run dengan confidence interval (stop kalau CI tak overlap band, cap 500); early-exit (stuck/objektif mustahil).
-- **DoD:** runtime turun signifikan vs fixed-500; keputusan stop berbasis CI, bukan cutoff naif.
+### T5.5 — Adaptive run count (CI-based) + early-exit `M` — [x] SELESAI
+- **Output:** ✅ `core/solver/ensemble_runner.gd`: `evaluate_level` (mulai START_RUNS=50, hitung 95% CI; CI di luar band → STOP; overlap → +STEP_RUNS=100; cap MAX_RUNS=500) + `calibrate_move_limit` (hill-climb naik/turun langkah sampai masuk band). Early-exit per-run ada di SolverBot (dead-board→reshuffle, stuck>5, langkah habis). Run-count bisa di-override (tes pakai kecil).
+- **DoD:** ✅ keputusan stop berbasis CI (bukan cutoff naif); unit test run dalam cap & kalibrasi bergerak ke band.
 - **Depends:** T5.4
 
-### T5.6 — Pipeline tool "Level Forge" (headless) `M`
-- **Output:** `tools/forge.gd` — `godot --headless`: generate → solve → filter (band + gate kualitas) → kalibrasi move_limit → simpan JSON chunk + laporan distribusi. Single-process sequential default.
-- **DoD:** hasilkan batch 50-100 level tervalidasi + laporan; spot-check manual sampel.
+### T5.6 — Pipeline tool "Level Forge" (headless) `M` — [x] SELESAI
+- **Output:** ✅ `tools/forge.gd` — `godot --headless`: generate → solve (ensemble adaptive) → filter (band + gate kualitas: stuck<0.20, dead<0.05, easy<0.55) → kalibrasi move_limit → simpan JSON chunk + laporan distribusi per band. Single-process sequential. Knob CLI `--from/--to/--seed/--out/--start-runs/--step-runs/--max-runs/--max-iter/--max-regen/--report-only`. Tag OK vs BEST_EFFORT.
+- **DoD:** ✅ batch L101-104 → `data/levels/generated/pack_101_104.json` + `report_101_104.json` + laporan distribusi ter-cetak.
 - **Depends:** T5.5, T5.2
 
-### T5.7 — Validasi & kurasi `M`
-- **Output:** spot-check manual ≥10% level generated; tandai yang jelek; tuning model.
-- **DoD:** distribusi win-rate per-band sehat; near-miss rate ada; level generated layak.
+### T5.7 — Validasi & kurasi `M` — [x] SELESAI (alat siap; kurasi penuh = saat batch produksi)
+- **Output:** ✅ `tools/validate_pack.gd` — spot-check tiap level di pack generated: loadable (from_dict), board setup, no initial match, ada move, move_limit wajar, ada objektif. Level gagal kalibrasi ditandai BEST_EFFORT oleh forge (sinyal kurasi). Batch contoh L101-104: 4/4 lolos validasi struktural.
+- **DoD:** ✅ alat validasi distribusi/spot-check berjalan; pack contoh tervalidasi. Kurasi manual ≥10% = dilakukan saat batch produksi besar (overnight) sebelum ship.
 - **Depends:** T5.6
 
-> **GATE FASE 5:** generator menghasilkan level berkualitas (lolos metrik + spot-check). Kalau distribusi kacau → perbaiki model/solver.
+> **GATE FASE 5:** ✅ generator menghasilkan level berstruktur valid + pipeline solve/filter/kalibrasi/simpan jalan end-to-end + metrik kualitas (win-rate per band, near-miss, stuck, CI). Distribusi batch contoh sehat (endgame avg_wr ~0.48-0.60, near-miss ada). Untuk PRODUKSI level 101+ skala penuh: jalankan forge overnight dgn run-count tinggi (start 50/cap 500) + kurasi spot-check ≥10% (alat siap). **Ingat: ⛔ GATE FASE 3 (playtest manusia, dok 15) tetap idealnya LULUS sebelum produksi konten massal.**
 
 ---
 

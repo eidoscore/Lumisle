@@ -214,3 +214,63 @@ static func has_any_match(board: Board) -> bool:
 	if not _find_runs(board).is_empty():
 		return true
 	return not _find_squares(board, {}).is_empty()
+
+
+## CEPAT (O(1) per panggil): apakah cell (x,y) menjadi bagian SUATU match —
+## garis ≥3 (H/V) ATAU kotak 2×2 sewarna yang melibatkan (x,y). Dipakai
+## _swap_creates_match (perf solver, dok 05 §6.1): sebuah swap hanya bisa membuat
+## match yang melibatkan salah satu dari 2 cell yang ditukar, jadi cukup cek lokal
+## di sekitar kedua cell — TIDAK perlu pindai seluruh papan tiap kandidat move.
+## PRASYARAT: dipakai saat papan dalam keadaan ter-resolve (tanpa match) sebelum swap.
+static func match_at(board: Board, x: int, y: int) -> bool:
+	if not board.is_playable(x, y):
+		return false
+	var color := board.get_color(x, y)
+	if color == TileCodes.EMPTY:
+		return false
+
+	# Garis horizontal melalui (x,y): hitung sama-warna ke kiri + kanan.
+	var hcount := 1
+	var k := x - 1
+	while k >= 0 and board.is_playable(k, y) and board.get_color(k, y) == color:
+		hcount += 1
+		k -= 1
+	k = x + 1
+	while k < board.width and board.is_playable(k, y) and board.get_color(k, y) == color:
+		hcount += 1
+		k += 1
+	if hcount >= 3:
+		return true
+
+	# Garis vertikal melalui (x,y).
+	var vcount := 1
+	k = y - 1
+	while k >= 0 and board.is_playable(x, k) and board.get_color(x, k) == color:
+		vcount += 1
+		k -= 1
+	k = y + 1
+	while k < board.height and board.is_playable(x, k) and board.get_color(x, k) == color:
+		vcount += 1
+		k += 1
+	if vcount >= 3:
+		return true
+
+	# Kotak 2×2 sewarna yang melibatkan (x,y): cek 4 blok di mana (x,y) jadi salah satu sudut.
+	for dx in [-1, 0]:
+		for dy in [-1, 0]:
+			if _square_same_color(board, x + dx, y + dy, color):
+				return true
+	return false
+
+
+## Apakah blok 2×2 dgn sudut kiri-atas (sx,sy) seluruhnya playable & berwarna `color`?
+static func _square_same_color(board: Board, sx: int, sy: int, color: int) -> bool:
+	if sx < 0 or sy < 0 or sx + 1 >= board.width or sy + 1 >= board.height:
+		return false
+	for ox in range(2):
+		for oy in range(2):
+			if not board.is_playable(sx + ox, sy + oy):
+				return false
+			if board.get_color(sx + ox, sy + oy) != color:
+				return false
+	return true

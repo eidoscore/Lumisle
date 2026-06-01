@@ -1,0 +1,50 @@
+{
+  "elapsed_s": 170.927,
+  "generated_at_unix": 1780286728,
+  "rows": [
+    {
+      "archetype": "bottleneck",
+      "band": "ENDGAME_101_PLUS",
+      "level": 101,
+      "move_limit": 14,
+      "near_miss": 0.166666666666667,
+      "runs": 10,
+      "status": "OK",
+      "stuck": 0.2,
+      "win_rate": 0.6
+    },
+    {
+      "archetype": "hard_near_miss",
+      "band": "ENDGAME_101_PLUS",
+      "level": 102,
+      "move_limit": 17,
+      "near_miss": 0.4,
+      "runs": 10,
+      "status": "BEST_EFFORT",
+      "stuck": 0.3,
+      "win_rate": 0.5
+    },
+    {
+      "archetype": "bottleneck",
+      "band": "ENDGAME_101_PLUS",
+      "level": 103,
+      "move_limit": 11,
+      "near_miss": 0.428571428571429,
+      "runs": 10,
+      "status": "BEST_EFFORT",
+      "stuck": 0.1,
+      "win_rate": 0.7
+    },
+    {
+      "archetype": "hard_near_miss",
+      "band": "ENDGAME_101_PLUS",
+      "level": 104,
+      "move_limit": 19,
+      "near_miss": 1.0,
+      "runs": 10,
+      "status": "BEST_EFFORT",
+      "stuck": 0.2,
+      "win_rate": 0.1
+    }
+  ]
+}
