@@ -56,7 +56,7 @@ static func choose_move(board: Board, objectives: Array, persona: int, rng: Game
 		Persona.GREEDY_COMBO:
 			return _best_by_score(board, moves, run_seed, rng, _ScoreKind.COMBO, objectives)
 		Persona.GREEDY_OBSTACLE:
-			return _best_by_score(board, moves, run_seed, rng, _ScoreKind.OBSTACLE, objectives)
+			return _best_by_objective(board, moves, run_seed, rng, objectives)
 		Persona.STRATEGIC_SETUP:
 			return _strategic(board, moves, run_seed, rng, objectives)
 		_:
@@ -106,6 +106,20 @@ static func _best_by_score(board: Board, moves: Array, run_seed: int, rng: GameR
 	return best
 
 
+## Pilih move yang paling memajukan OBJEKTIF aktif (persona fokus-objektif, dok 05 §5.3).
+static func _best_by_objective(board: Board, moves: Array, run_seed: int, rng: GameRNG, objectives: Array) -> Dictionary:
+	var candidates := _cap_candidates(moves, rng)
+	var best: Dictionary = candidates[0]
+	var best_score := -2.0
+	for mv in candidates:
+		var ev := MoveEval.evaluate(board, mv["a"], mv["b"], run_seed)
+		var s := _objective_score(ev, objectives)
+		if s > best_score:
+			best_score = s
+			best = mv
+	return best
+
+
 static func _score(ev: MoveEval, kind: int) -> float:
 	if not ev.accepted:
 		return -1.0
@@ -117,6 +131,29 @@ static func _score(ev: MoveEval, kind: int) -> float:
 	# COMBO/agresif: bobot besar untuk special + cascade dalam + banyak clear.
 	return ev.specials_created * 6.0 + ev.specials_triggered * 4.0 \
 		+ ev.cascade_depth * 3.0 + ev.tiles_cleared * 1.0
+
+
+## Skor seberapa besar move MEMAJUKAN objektif aktif (pemain fokus-objektif, dok 05 §5.3).
+## Menangani SEMUA tipe objektif (collect/clear_obstacle/bring_down/score), bukan hanya
+## obstacle — sebelumnya solver "fokus-objektif" buta terhadap objektif collect → stuck palsu.
+static func _objective_score(ev: MoveEval, objectives: Array) -> float:
+	if not ev.accepted:
+		return -1.0
+	var s := 0.0
+	for o in objectives:
+		if o == null or o.is_complete():
+			continue
+		if o is CollectObjective:
+			s += float(ev.cleared_by_color.get(o.tile_color, 0)) * 10.0
+		elif o is ClearObstacleObjective:
+			s += ev.obstacles_destroyed * 12.0 + ev.obstacles_damaged * 5.0
+		elif o is BringDownObjective:
+			s += ev.collectibles_delivered * 15.0
+		elif o is ScoreObjective:
+			s += float(ev.score_delta_x2) * 0.02
+	# Komponen kecil "kemajuan umum" (special/cascade) sebagai tie-breaker.
+	s += ev.specials_created * 2.0 + ev.cascade_depth * 1.0 + ev.tiles_cleared * 0.2
+	return s
 
 
 ## Strategic 2-ply ringan: skor = clear sekarang + 0.5 × best move SETELAHNYA

@@ -5,6 +5,7 @@ class_name MoveEval extends RefCounted
 
 var accepted: bool = false
 var tiles_cleared: int = 0
+var cleared_by_color: Dictionary = {}   # warna(int) → jumlah ter-clear (untuk objektif collect)
 var specials_created: int = 0
 var specials_triggered: int = 0
 var obstacles_damaged: int = 0
@@ -32,6 +33,8 @@ func _summarize(report: TurnReport) -> void:
 			MoveAction.Type.TILE_CLEARED:
 				tiles_cleared += step.positions.size()
 				cascade_depth += 1
+				for c in step.data.get("colors", []):
+					cleared_by_color[int(c)] = int(cleared_by_color.get(int(c), 0)) + 1
 			MoveAction.Type.SPECIAL_CREATED:
 				specials_created += 1
 			MoveAction.Type.SPECIAL_TRIGGERED:

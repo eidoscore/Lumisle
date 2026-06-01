@@ -163,6 +163,23 @@ func test_easy_level_high_winrate() -> void:
 	assert_true(stats.win_rate >= 0.6, "level longgar win-rate tinggi (dapat %.2f)" % stats.win_rate)
 
 
+func test_objective_focused_persona_pursues_collect() -> void:
+	# REGRESI (fix 2026-06-01): persona fokus-objektif (greedy_obstacle) dulu BUTA
+	# terhadap objektif collect → stuck palsu. Sekarang harus mengejar warna target.
+	# Level collect realistis & longgar → tidak boleh stuck, dan harus menang.
+	var lv := _tiny_level(25)   # collect 6 warna-1, board 6×7, 4 warna, 25 langkah (longgar)
+	var won := 0
+	var stuck := 0
+	for i in range(8):
+		var res := SolverBot.play(lv, 700 + i, SolverPersonas.Persona.GREEDY_OBSTACLE)
+		if res.won:
+			won += 1
+		if res.stuck:
+			stuck += 1
+	assert_eq(stuck, 0, "objective-focused tidak stuck di level collect longgar")
+	assert_true(won >= 6, "objective-focused menang mayoritas (dapat %d/8)" % won)
+
+
 # ---------------------------------------------------------------------------
 # T5.4 — SolverStats formula (data sintetis)
 # ---------------------------------------------------------------------------
