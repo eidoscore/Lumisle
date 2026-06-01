@@ -34,6 +34,10 @@ window/handheld/orientation=1
 
 project/assembly_name="Lumisle"
 
+[gui]
+
+theme/custom="res://ui/theme/lumisle_theme.tres"
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

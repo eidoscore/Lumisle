@@ -230,8 +230,17 @@
 - **DoD:** ✅ tidak crash, swap/cascade jalan, FPS sehat (≥30, no drop warning), navigasi Menu→Map→Game OK.
 - **Depends:** T1.13, T0.9
 
-### T1.16 — Art acquisition & pipeline (PARALEL, non-blocking) `M` — [ ] DITUNDA (placeholder dipakai)
-- **STATUS:** Belum dikerjakan. Fase 1 pakai **tile placeholder kotak warna** (cukup untuk validasi logika & gate fun internal). Aset CC0 + palet final dikerjakan paralel sebelum/awal Fase 2-3 (vertical slice butuh art proper). TIDAK memblok core.
+### T1.16 — Art acquisition & pipeline (PARALEL, non-blocking) `M` — [~] LAPIS 1 PROSEDURAL SELESAI (aset CC0 final menyusul)
+- **STATUS:** **Lapis prosedural (dok 07 §2.0 "aksen") dikerjakan 2026-06-01** untuk mengatasi keluhan "UI jelek/polos bawaan Godot" sebelum playtest Fase 3. Aset CC0/Kenney final (lapis "fondasi") masih bisa di-upgrade nanti (T8.7) tanpa mengubah arsitektur — semua render lewat node prosedural yang gampang diganti sprite.
+- **Sudah dikerjakan:**
+  - **Tile = bentuk permata UNIK per warna** (`view/tile_gfx.gd`): merah=lingkaran, biru=kotak, hijau=segitiga, kuning=wajik, ungu=pentagon, oranye=heksagon → memenuhi dok 07 §2.3 (WAJIB bentuk unik utk aksesibilitas buta-warna + keterbacaan <1 dtk). Tiap tile digambar gradien + kilau + outline gelap (kesan "gem cahaya"), special diberi cincin glow + glyph putih beroutline. `board_view.gd` dmigrasi dari `ColorRect` polos → `TileGfx`.
+  - **Backdrop papan** gelap membulat di belakang grid (kontras tile terang).
+  - **Theme global** (`ui/theme/lumisle_theme.tres`, didaftarkan di `project.godot [gui] theme/custom`): tombol oranye membulat + bevel + shadow, label beroutline. Skin SEMUA layar sekaligus (menu/peta/meta/settings/game) — hilangkan "tombol default Godot".
+  - **Latar prosedural** (`ui/lumi_background.gd`): gradien langit senja + Lumi (roh cahaya) melayang berdenyut. Dipasang di main_menu, level_map, meta, game.
+  - **Main menu** dirombak: panel judul "LUMISLE" besar berdenyut + subjudul + tombol bertema + SFX tap.
+  - **Meta island** (`meta/island_art.gd`): pulau prosedural (tanah+rumput+pohon cahaya+Lumi) yang "redup→bercahaya" per tahap bintang — menggantikan ColorRect polos.
+- **DoD:** ✅ 124 unit test tetap lulus, 0 diagnostik, build APK sukses, ter-install & **diverifikasi di HP fisik via analisa piksel** (`tools/qa_visual.py`/`qa_verify.py`): navigasi menu→peta→game→meta benar (diff layar 18-23), board tampil ≥4 warna gem berbeda (bentuk std fill 0.25 = bentuk bervariasi), pulau render rumput hijau (118,201,122) + tanah (116,80,50) + Lumi (bukan rect datar). Latar bukan abu default (entropy ~4.4).
+- **Sisa (opsional, tak memblok):** aset CC0/Kenney final + audio .ogg (T8.7); ikon special bitmap; mascot.
 - **Depends:** — (paralel)
 
 > **GATE FASE 1 (checkpoint fun internal):** ✅ match-3 bisa dimainkan (board render, swap, cascade, win/lose), ✅ jalan di HP, ✅ 63 unit test core lulus. Core terasa benar secara mekanik. **Lanjut Fase 2** (special items + juice) untuk bikin "kerasa enak". Art (T1.16) menyusul paralel.

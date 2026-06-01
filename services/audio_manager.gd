@@ -60,6 +60,7 @@ func _build_sfx() -> void:
 	_sfx["win"] = _make_arpeggio([523.0, 659.0, 784.0, 1046.0], 0.5)
 	_sfx["lose"] = _make_arpeggio([392.0, 330.0, 262.0], 0.45)
 	_sfx["invalid"] = _make_blip(180.0, 0.08, 0.25)
+	_sfx["tap"] = _make_blip(880.0, 0.05, 0.22)
 
 
 ## Nada sederhana (sine) dengan envelope decay. freq_mul>1 → sweep naik.

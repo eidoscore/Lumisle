@@ -34,6 +34,7 @@ var board: Board = null
 var _move_rng: GameRNG = null
 var _tiles: Array = []                # ColorRect per cell, index = board.idx(x,y)
 var _tiles_root: Node2D = null
+var _backdrop: Panel = null           # papan gelap di belakang grid (kontras tile)
 var _disp: PackedInt32Array = PackedInt32Array()  # state TAMPILAN (encoded), di-replay dari report — BUKAN baca board final
 
 var _input_enabled := true
@@ -141,9 +142,31 @@ func _shake(amount: float) -> void:
 # Build per-tile nodes
 # ---------------------------------------------------------------------------
 
+## Panel gelap membulat di belakang grid → tile permata terang lebih "pop".
+func _build_board_backdrop() -> void:
+	if _backdrop != null and is_instance_valid(_backdrop):
+		_backdrop.queue_free()
+	_backdrop = Panel.new()
+	var pad := 18.0
+	_backdrop.position = Vector2(-pad, -pad)
+	_backdrop.size = Vector2(board.width * TILE_SIZE + pad * 2.0, board.height * TILE_SIZE + pad * 2.0)
+	_backdrop.z_index = -5
+	_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.08, 0.07, 0.16, 0.55)
+	sb.set_corner_radius_all(28)
+	sb.border_color = Color(0.5, 0.55, 0.85, 0.30)
+	sb.set_border_width_all(3)
+	sb.shadow_color = Color(0, 0, 0, 0.4)
+	sb.shadow_size = 12
+	_backdrop.add_theme_stylebox_override("panel", sb)
+	add_child(_backdrop)
+
+
 func _build_tiles() -> void:
 	if _tiles_root != null and is_instance_valid(_tiles_root):
 		_tiles_root.queue_free()
+	_build_board_backdrop()
 	_tiles_root = Node2D.new()
 	add_child(_tiles_root)
 	_tiles.clear()
@@ -151,17 +174,20 @@ func _build_tiles() -> void:
 	var vis := float(TILE_SIZE - GAP)
 	for y in range(board.height):
 		for x in range(board.width):
-			var rect := ColorRect.new()
+			# TileGfx = bentuk permata prosedural unik per warna (dok 07 §2.3).
+			var rect := TileGfx.new()
 			rect.size = Vector2(vis, vis)
 			rect.pivot_offset = Vector2(vis, vis) * 0.5
 			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			# Marker glyph untuk special (placeholder; ikon proper di T2.5/art).
+			# Marker glyph putih untuk special (di atas glow permata).
 			var marker := Label.new()
 			marker.size = Vector2(vis, vis)
 			marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			marker.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			marker.add_theme_font_size_override("font_size", 56)
-			marker.add_theme_color_override("font_color", Color(0.1, 0.1, 0.12))
+			marker.add_theme_font_size_override("font_size", 52)
+			marker.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
+			marker.add_theme_color_override("font_outline_color", Color(0.1, 0.08, 0.18, 0.9))
+			marker.add_theme_constant_override("outline_size", 8)
 			marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			marker.text = ""
 			rect.add_child(marker)
@@ -174,7 +200,7 @@ func _build_tiles() -> void:
 func _layout_tiles() -> void:
 	for y in range(board.height):
 		for x in range(board.width):
-			var rect: ColorRect = _tiles[board.idx(x, y)]
+			var rect: TileGfx = _tiles[board.idx(x, y)]
 			rect.position = _tile_topleft(x, y)
 			rect.scale = Vector2.ONE
 			rect.pivot_offset = rect.size * 0.5
@@ -252,18 +278,23 @@ func _refresh_all() -> void:
 
 
 func _refresh_tile(x: int, y: int) -> void:
-	var rect: ColorRect = _tiles[board.idx(x, y)]
+	var rect: TileGfx = _tiles[board.idx(x, y)]
 	if rect == null:
 		return
 	rect.position = _tile_topleft(x, y)
 	rect.scale = Vector2.ONE
 	rect.modulate = Color.WHITE
-	rect.color = _color_for(x, y)
-	rect.visible = rect.color.a > 0.0
-	# Marker special (placeholder glyph sampai ikon art di T2.5).
+	var playable := board.is_playable(x, y)
+	var blocker := playable and board.cell_blocks_movement(x, y)
+	var ccode := _disp_color(x, y) if playable else 0
+	var sp := _disp_special(x, y) if playable else 0
+	var empty_slot := playable and not blocker and ccode == TileCodes.EMPTY
+	rect.set_tile(ccode, sp, _color_for(x, y), blocker, empty_slot)
+	rect.visible = playable
+	# Marker special (glyph putih di atas permata).
 	if rect.has_meta("marker"):
 		var marker: Label = rect.get_meta("marker")
-		marker.text = _special_glyph(_disp_special(x, y)) if board.is_playable(x, y) else ""
+		marker.text = _special_glyph(sp) if playable else ""
 
 
 ## Glyph placeholder per tipe special (dibedakan jelas; ikon final = art Fase 2).
@@ -523,8 +554,8 @@ func _do_swap(x1: int, y1: int, x2: int, y2: int) -> void:
 ## Setelah selesai, posisi node dikembalikan ke grid masing-masing (caller refresh).
 func _anim_swap_visual(x1: int, y1: int, x2: int, y2: int) -> void:
 	_animating = true
-	var r1: ColorRect = _tiles[board.idx(x1, y1)]
-	var r2: ColorRect = _tiles[board.idx(x2, y2)]
+	var r1: TileGfx = _tiles[board.idx(x1, y1)]
+	var r2: TileGfx = _tiles[board.idx(x2, y2)]
 	var p1 := _tile_topleft(x1, y1)
 	var p2 := _tile_topleft(x2, y2)
 	var t := create_tween().set_parallel(true)
@@ -585,10 +616,10 @@ func _anim_clear_pop(step) -> void:
 	var t := create_tween().set_parallel(true)
 	for pos in positions:
 		var p: Vector2i = pos
-		var rect: ColorRect = _tiles[board.idx(p.x, p.y)]
+		var rect: TileGfx = _tiles[board.idx(p.x, p.y)]
 		if rect == null:
 			continue
-		_burst_particles(p, rect.color)
+		_burst_particles(p, rect.base_color)
 		rect.pivot_offset = rect.size * 0.5
 		t.tween_property(rect, "scale", Vector2(0.1, 0.1), 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 		t.parallel().tween_property(rect, "modulate:a", 0.0, 0.16)
