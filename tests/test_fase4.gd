@@ -190,3 +190,33 @@ func test_resolve_swap_damages_adjacent_ice() -> void:
 			if int(s.data.get("type", -1)) == OT.ICE:
 				ice_dmg = true
 	assert_true(ice_dmg, "ice di sebelah match kena damage")
+
+
+# --- T4.3c integration: collectible reaches bottom -> delivered ---
+
+func test_collectible_delivered_at_bottom() -> void:
+	var b := BoardTestHelper.from_grid([
+		"23452",
+		"34521",
+		"21345",
+		"13245",
+		"32451",
+	])
+	# Collectible di (0,3); sel bawah (0,4) dikosongkan (simulasi habis di-clear).
+	b.obstacle_layer[b.idx(0, 3)] = TileCodes.encode_obstacle(OT.COLLECTIBLE, 1, 1)
+	b.set_cell(0, 3, TileCodes.EMPTY)
+	b.set_cell(0, 4, TileCodes.EMPTY)
+	var report := TurnReport.new()
+	b._process_bring_down(report)
+	var delivered := false
+	for s in report.steps:
+		if s.type == MoveAction.Type.OBSTACLE_DESTROYED and bool(s.data.get("delivered", false)):
+			delivered = true
+	assert_true(delivered, "collectible sampai baris terbawah → delivered")
+	# Tidak ada collectible tersisa di board.
+	var remain := 0
+	for y in range(b.height):
+		for x in range(b.width):
+			if TileCodes.obstacle_type(b.get_obstacle(x, y)) == OT.COLLECTIBLE:
+				remain += 1
+	assert_eq(remain, 0, "collectible hilang setelah delivered")

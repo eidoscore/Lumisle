@@ -407,7 +407,9 @@
 - **STATUS:** Sengaja ditunda (ditandai "opsional"). Authoring sekarang cukup via generator JSON + exporter `.tres`. Editor visual menyusul kalau volume level besar (Fase 5+ generator menggantikan sebagian kebutuhan ini).
 - **Depends:** T4.0, T4.1b
 
-> **GATE FASE 4:** ✅ 30 level FTUE jalan dari data (JSON), kurikulum bertahap, rintangan dasar (ice/box/collectible) berfungsi & teruji (123 test). Lanjut Fase 5 (generator+solver) — tapi ingat: ⛔ GATE FASE 3 (playtest manusia, dok 15) belum dijalankan; idealnya gate itu LULUS dulu sebelum investasi generator.
+> **GATE FASE 4:** ✅ 30 level FTUE jalan dari data (JSON), kurikulum bertahap, rintangan dasar (ice/box/collectible) berfungsi & teruji (124 test). Lanjut Fase 5 (generator+solver) — tapi ingat: ⛔ GATE FASE 3 (playtest manusia, dok 15) belum dijalankan; idealnya gate itu LULUS dulu sebelum investasi generator.
+>
+> **QA OTOMATIS (uiautomator2, 2026-06-01):** `tools/qa_fase4.py` = 8/8 PASS di HP fisik (launch→menu→peta(30 lvl)→L1 load 3-warna→board penuh→auto-main menang→save `{"lvl_001":3}`→analytics start+complete). `tools/qa_obstacles.gd` (headless): L18 ice=4 + 3 event damage saat match sebelah; L27 collectible=2, descent jalan (y 0→1→2 saat clear di bawahnya), delivery terverifikasi (`test_collectible_delivered_at_bottom`). **TEMUAN BALANCING (bukan bug):** bring-down hanya maju kalau pemain meng-clear DI BAWAH collectible; solver greedy jarang melakukannya → L26-30 berpotensi terlalu sulit/untung-untungan. Catat untuk playtest dok 15 / tuning Fase 4.5.
 
 ---
 
