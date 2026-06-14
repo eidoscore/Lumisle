@@ -167,6 +167,8 @@ func _finish(won: bool) -> void:
 	if won:
 		var stars := 1  # GDD §6.0: binary 1 star per win
 		GameState.record_level_win(_level.id, stars, _moves_left)
+		var nxt_idx := LevelLoader.index_of(_level.id) + 1
+		GameState.next_level_id = LevelLoader.id_at(nxt_idx) if nxt_idx < LevelLoader.count() else ""
 		Analytics.log_event("level_complete", {
 			"level": _level.id, "moves_left": _moves_left, "stars": stars,
 			"score": Score.to_display(_score_x2), "secs": elapsed,
@@ -252,13 +254,7 @@ func _on_back_pressed() -> void:
 
 
 func _on_next_level_pressed() -> void:
-	var cur_index := LevelLoader.index_of(_level.id)
-	var next_index := cur_index + 1
-	if next_index < LevelLoader.count():
-		GameState.current_level_id = LevelLoader.id_at(next_index)
-		SceneManager.change_screen("game")
-	else:
-		SceneManager.change_screen("meta")
+	SceneManager.change_screen("meta")
 
 
 func _on_retry_pressed() -> void:

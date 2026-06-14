@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://b0lumislemetascene0"]
+[gd_scene load_steps=5 format=3 uid="uid://b0lumislemetascene0"]
 
 [ext_resource type="Script" path="res://meta/meta_scene.gd" id="1_metascene"]
 [ext_resource type="Script" path="res://ui/lumi_background.gd" id="2_lumibg"]
 [ext_resource type="Script" path="res://meta/island_art.gd" id="3_island"]
+[ext_resource type="Script" path="res://meta/lumi_grid.gd" id="4_lumigrid"]
 
 [node name="MetaScene" type="Control"]
 layout_mode = 3
@@ -21,9 +22,9 @@ script = ExtResource("2_lumibg")
 
 [node name="Title" type="Label" parent="."]
 offset_left = 60.0
-offset_top = 200.0
+offset_top = 160.0
 offset_right = 1020.0
-offset_bottom = 290.0
+offset_bottom = 260.0
 theme_override_font_sizes/font_size = 72
 theme_override_colors/font_color = Color(1, 0.92, 0.62, 1)
 horizontal_alignment = 1
@@ -31,54 +32,71 @@ text = "Pulau Lumisle"
 
 [node name="StageLabel" type="Label" parent="."]
 offset_left = 60.0
-offset_top = 300.0
+offset_top = 268.0
 offset_right = 1020.0
-offset_bottom = 356.0
-theme_override_font_sizes/font_size = 38
+offset_bottom = 320.0
+theme_override_font_sizes/font_size = 36
 horizontal_alignment = 1
 text = "Pulau Redup (tahap 1/3)"
 
 [node name="Island" type="Control" parent="."]
 offset_left = 140.0
-offset_top = 420.0
+offset_top = 340.0
 offset_right = 940.0
-offset_bottom = 1320.0
+offset_bottom = 1100.0
 mouse_filter = 2
 script = ExtResource("3_island")
 
 [node name="StarsLabel" type="Label" parent="."]
 offset_left = 60.0
-offset_top = 1360.0
+offset_top = 1110.0
 offset_right = 1020.0
-offset_bottom = 1420.0
-theme_override_font_sizes/font_size = 44
+offset_bottom = 1168.0
+theme_override_font_sizes/font_size = 42
 theme_override_colors/font_color = Color(1, 0.95, 0.7, 1)
 horizontal_alignment = 1
 text = "Lumi terkumpul: 0"
 
+[node name="LumiGridLabel" type="Label" parent="."]
+offset_left = 60.0
+offset_top = 1175.0
+offset_right = 1020.0
+offset_bottom = 1215.0
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(0.8, 0.75, 0.9, 0.7)
+horizontal_alignment = 1
+text = "Koleksi Lumi"
+
+[node name="LumiGrid" type="Control" parent="."]
+offset_left = 80.0
+offset_top = 1220.0
+offset_right = 1000.0
+offset_bottom = 1400.0
+script = ExtResource("4_lumigrid")
+
 [node name="ResultLabel" type="Label" parent="."]
 visible = false
 offset_left = 60.0
-offset_top = 1430.0
+offset_top = 1412.0
 offset_right = 1020.0
-offset_bottom = 1500.0
-theme_override_font_sizes/font_size = 36
+offset_bottom = 1480.0
+theme_override_font_sizes/font_size = 34
 theme_override_colors/font_color = Color(0.7, 1, 0.8, 1)
 horizontal_alignment = 1
 text = ""
 
 [node name="PlayButton" type="Button" parent="."]
-offset_left = 200.0
-offset_top = 1560.0
-offset_right = 880.0
-offset_bottom = 1690.0
-text = "Main Level"
+offset_left = 160.0
+offset_top = 1500.0
+offset_right = 920.0
+offset_bottom = 1620.0
+text = "Pilih Level"
 
 [node name="BackButton" type="Button" parent="."]
-offset_left = 200.0
-offset_top = 1720.0
-offset_right = 880.0
-offset_bottom = 1840.0
+offset_left = 160.0
+offset_top = 1640.0
+offset_right = 920.0
+offset_bottom = 1750.0
 text = "Menu Utama"
 
 [connection signal="pressed" from="PlayButton" to="." method="_on_play_pressed"]

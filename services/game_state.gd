@@ -21,6 +21,8 @@ var is_game_active: bool = false
 var level_stars: Dictionary = {}
 # Hasil level terakhir (untuk transisi ke meta): {level_id, won, stars, moves_left}.
 var last_result: Dictionary = {}
+# ID level berikutnya setelah menang (di-set game_screen, dikonsumsi meta_scene).
+var next_level_id: String = ""
 
 
 func _ready() -> void:
@@ -57,7 +59,9 @@ func levels_cleared() -> int:
 
 
 func _save_progress() -> void:
-	SaveManager.save_game({"level_stars": level_stars})
+	var data := SaveManager.load_game()
+	data["level_stars"] = level_stars
+	SaveManager.save_game(data)
 
 
 func _load_progress() -> void:
