@@ -102,7 +102,44 @@ theme_override_font_sizes/font_size = 26
 horizontal_alignment = 2
 text = ""
 
+[node name="NearMissLabel" type="Label" parent="HUD"]
+visible = false
+offset_left = 60.0
+offset_top = 1360.0
+offset_right = 1020.0
+offset_bottom = 1450.0
+theme_override_font_sizes/font_size = 34
+theme_override_colors/font_color = Color(1, 0.8, 0.4, 1)
+horizontal_alignment = 1
+text = ""
+
+[node name="ActionPanel" type="VBoxContainer" parent="HUD"]
+visible = false
+offset_left = 200.0
+offset_top = 1470.0
+offset_right = 880.0
+offset_bottom = 1790.0
+theme_override_constants/separation = 18
+
+[node name="NextLevelButton" type="Button" parent="HUD/ActionPanel"]
+custom_minimum_size = Vector2(680, 96)
+focus_mode = 0
+text = "Level Berikutnya →"
+
+[node name="RetryButton" type="Button" parent="HUD/ActionPanel"]
+custom_minimum_size = Vector2(680, 96)
+focus_mode = 0
+text = "Coba Lagi"
+
+[node name="BackToMapButton" type="Button" parent="HUD/ActionPanel"]
+custom_minimum_size = Vector2(680, 96)
+focus_mode = 0
+text = "Peta Level"
+
 [node name="PopupLayer" type="CanvasLayer" parent="."]
 
 [connection signal="pressed" from="HUD/BackButton" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="HUD/DebugButton" to="." method="_on_debug_pressed"]
+[connection signal="pressed" from="HUD/ActionPanel/NextLevelButton" to="." method="_on_next_level_pressed"]
+[connection signal="pressed" from="HUD/ActionPanel/RetryButton" to="." method="_on_retry_pressed"]
+[connection signal="pressed" from="HUD/ActionPanel/BackToMapButton" to="." method="_on_back_to_map_pressed"]

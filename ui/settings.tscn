@@ -10,28 +10,75 @@ anchor_bottom = 1.0
 script = ExtResource("1_settings")
 
 [node name="Title" type="Label" parent="."]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -200.0
-offset_top = 150.0
-offset_right = 200.0
-offset_bottom = 230.0
+offset_left = 60.0
+offset_top = 140.0
+offset_right = 1020.0
+offset_bottom = 240.0
+theme_override_font_sizes/font_size = 64
 horizontal_alignment = 1
 text = "Pengaturan"
 
+[node name="ToggleList" type="VBoxContainer" parent="."]
+offset_left = 160.0
+offset_top = 320.0
+offset_right = 920.0
+offset_bottom = 980.0
+theme_override_constants/separation = 24
+
+[node name="SfxRow" type="HBoxContainer" parent="ToggleList"]
+custom_minimum_size = Vector2(0, 100)
+theme_override_constants/separation = 24
+
+[node name="SfxLabel" type="Label" parent="ToggleList/SfxRow"]
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 40
+text = "Efek Suara"
+
+[node name="SfxButton" type="Button" parent="ToggleList/SfxRow"]
+custom_minimum_size = Vector2(180, 80)
+focus_mode = 0
+theme_override_font_sizes/font_size = 36
+text = "ON"
+
+[node name="MusicRow" type="HBoxContainer" parent="ToggleList"]
+custom_minimum_size = Vector2(0, 100)
+theme_override_constants/separation = 24
+
+[node name="MusicLabel" type="Label" parent="ToggleList/MusicRow"]
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 40
+text = "Musik"
+
+[node name="MusicButton" type="Button" parent="ToggleList/MusicRow"]
+custom_minimum_size = Vector2(180, 80)
+focus_mode = 0
+theme_override_font_sizes/font_size = 36
+text = "ON"
+
+[node name="HapticRow" type="HBoxContainer" parent="ToggleList"]
+custom_minimum_size = Vector2(0, 100)
+theme_override_constants/separation = 24
+
+[node name="HapticLabel" type="Label" parent="ToggleList/HapticRow"]
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 40
+text = "Getaran"
+
+[node name="HapticButton" type="Button" parent="ToggleList/HapticRow"]
+custom_minimum_size = Vector2(180, 80)
+focus_mode = 0
+theme_override_font_sizes/font_size = 36
+text = "ON"
+
 [node name="BackButton" type="Button" parent="."]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -130.0
-offset_top = -40.0
-offset_right = 130.0
-offset_bottom = 40.0
+offset_left = 200.0
+offset_top = 1700.0
+offset_right = 880.0
+offset_bottom = 1820.0
+focus_mode = 0
 text = "Kembali"
 
+[connection signal="pressed" from="ToggleList/SfxRow/SfxButton" to="." method="_on_sfx_toggled"]
+[connection signal="pressed" from="ToggleList/MusicRow/MusicButton" to="." method="_on_music_toggled"]
+[connection signal="pressed" from="ToggleList/HapticRow/HapticButton" to="." method="_on_haptic_toggled"]
 [connection signal="pressed" from="BackButton" to="." method="_on_back_pressed"]

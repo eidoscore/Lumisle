@@ -10,8 +10,17 @@ var language: String = "en"   # "en" (default) | "id"
 
 func _ready() -> void:
 	set_process(false)
+	_load()
 
 
-## STUB — persist preferensi via SaveManager, diisi di T8.6.
+func _load() -> void:
+	var data := SaveManager.load_game()
+	var prefs: Dictionary = data.get("settings", {})
+	sfx_enabled = prefs.get("sfx", true)
+	music_enabled = prefs.get("music", true)
+	haptic_enabled = prefs.get("haptic", true)
+
+
 func apply() -> void:
-	pass
+	AudioManager.set_enabled(sfx_enabled)
+	AudioManager.set_music_enabled(music_enabled)

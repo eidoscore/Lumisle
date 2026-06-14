@@ -30,6 +30,10 @@ func set_enabled(on: bool) -> void:
 	_enabled = on
 
 
+func set_music_enabled(_on: bool) -> void:
+	pass  # stub — musik belum ada aset; T8.7 sambungkan ke AudioStreamPlayer musik
+
+
 ## Mainkan SFX by id. pitch_scale untuk variasi (mis. naik per tingkat cascade).
 func play_sfx(sfx_id: String, pitch_scale: float = 1.0) -> void:
 	if not _enabled:

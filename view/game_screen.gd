@@ -22,6 +22,11 @@ var _level_start_msec := 0
 @onready var _instruction_label: Label = $HUD/InstructionLabel
 @onready var _title_label: Label = $HUD/TitleLabel
 @onready var _debug_label: Label = $HUD/DebugLabel
+@onready var _near_miss_label: Label = $HUD/NearMissLabel
+@onready var _action_panel: VBoxContainer = $HUD/ActionPanel
+@onready var _next_level_btn: Button = $HUD/ActionPanel/NextLevelButton
+@onready var _retry_btn: Button = $HUD/ActionPanel/RetryButton
+@onready var _back_to_map_btn: Button = $HUD/ActionPanel/BackToMapButton
 
 var _debug_on := false
 
@@ -178,17 +183,20 @@ func _finish(won: bool) -> void:
 
 func _show_result(won: bool, stars: int) -> void:
 	if _result_label:
-		var txt := "MENANG!" if won else "KALAH"
-		if won:
-			txt += "\n★"
+		var txt := "MENANG! ★" if won else "HAMPIR!"
 		_result_label.text = txt
 		_result_label.visible = true
 		_animate_result(won)
-	await get_tree().create_timer(1.8).timeout
-	if won:
-		SceneManager.change_screen("meta")
-	else:
-		SceneManager.change_screen("level_map")
+	if not won and _near_miss_label:
+		var short := _tiles_remaining_total()
+		_near_miss_label.text = "Kurang %d tile lagi..." % short
+		_near_miss_label.visible = true
+	if _action_panel:
+		_next_level_btn.visible = won
+		_retry_btn.visible = true
+		_back_to_map_btn.visible = true
+		await get_tree().create_timer(0.8).timeout
+		_action_panel.visible = true
 
 
 func _animate_result(won: bool) -> void:
@@ -223,11 +231,38 @@ func _spawn_win_stars() -> void:
 	pt.emitting = true
 
 
+func _tiles_remaining_total() -> int:
+	var total := 0
+	for i in range(_objectives.size()):
+		var remaining := _objectives[i].get_target() - _objectives[i].get_progress()
+		total += maxi(0, remaining)
+	return total
+
+
 func _on_level_won() -> void:
 	_finish(true)
 
 
 func _on_back_pressed() -> void:
+	GameState.is_game_active = false
+	SceneManager.change_screen("level_map")
+
+
+func _on_next_level_pressed() -> void:
+	var cur_index := LevelLoader.index_of(_level.id)
+	var next_index := cur_index + 1
+	if next_index < LevelLoader.count():
+		GameState.current_level_id = LevelLoader.id_at(next_index)
+		SceneManager.change_screen("game")
+	else:
+		SceneManager.change_screen("meta")
+
+
+func _on_retry_pressed() -> void:
+	SceneManager.change_screen("game")
+
+
+func _on_back_to_map_pressed() -> void:
 	GameState.is_game_active = false
 	SceneManager.change_screen("level_map")
 

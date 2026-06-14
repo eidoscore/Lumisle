@@ -85,3 +85,8 @@ static func get_by_index(index: int) -> LevelDefinition:
 static func all_ids() -> Array[String]:
 	load_all()
 	return _order.duplicate()
+
+
+static func index_of(id: String) -> int:
+	load_all()
+	return _order.find(id)
