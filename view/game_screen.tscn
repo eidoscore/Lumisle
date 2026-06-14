@@ -126,6 +126,12 @@ custom_minimum_size = Vector2(680, 96)
 focus_mode = 0
 text = "Level Berikutnya →"
 
+[node name="ExtraMovesButton" type="Button" parent="HUD/ActionPanel"]
+visible = false
+custom_minimum_size = Vector2(680, 88)
+focus_mode = 0
+text = "⚡ +5 Langkah (30 🪙)"
+
 [node name="RetryButton" type="Button" parent="HUD/ActionPanel"]
 custom_minimum_size = Vector2(680, 96)
 focus_mode = 0
@@ -136,10 +142,40 @@ custom_minimum_size = Vector2(680, 96)
 focus_mode = 0
 text = "Peta Level"
 
+[node name="BoosterBar" type="HBoxContainer" parent="HUD"]
+offset_left = 60.0
+offset_top = 240.0
+offset_right = 1020.0
+offset_bottom = 290.0
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="HammerBtn" type="Button" parent="HUD/BoosterBar"]
+custom_minimum_size = Vector2(280, 50)
+focus_mode = 0
+theme_override_font_sizes/font_size = 22
+text = "🔨 Palu (20🪙)"
+
+[node name="SwapBtn" type="Button" parent="HUD/BoosterBar"]
+custom_minimum_size = Vector2(280, 50)
+focus_mode = 0
+theme_override_font_sizes/font_size = 22
+text = "🔄 Swap (15🪙)"
+
+[node name="MovesBtn" type="Button" parent="HUD/BoosterBar"]
+custom_minimum_size = Vector2(280, 50)
+focus_mode = 0
+theme_override_font_sizes/font_size = 22
+text = "⚡ +5 (30🪙)"
+
 [node name="PopupLayer" type="CanvasLayer" parent="."]
 
 [connection signal="pressed" from="HUD/BackButton" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="HUD/DebugButton" to="." method="_on_debug_pressed"]
 [connection signal="pressed" from="HUD/ActionPanel/NextLevelButton" to="." method="_on_next_level_pressed"]
+[connection signal="pressed" from="HUD/ActionPanel/ExtraMovesButton" to="." method="_on_extra_moves_pressed"]
 [connection signal="pressed" from="HUD/ActionPanel/RetryButton" to="." method="_on_retry_pressed"]
 [connection signal="pressed" from="HUD/ActionPanel/BackToMapButton" to="." method="_on_back_to_map_pressed"]
+[connection signal="pressed" from="HUD/BoosterBar/HammerBtn" to="." method="_on_hammer_pressed"]
+[connection signal="pressed" from="HUD/BoosterBar/SwapBtn" to="." method="_on_swap_pressed"]
+[connection signal="pressed" from="HUD/BoosterBar/MovesBtn" to="." method="_on_moves_booster_pressed"]

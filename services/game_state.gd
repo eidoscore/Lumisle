@@ -23,6 +23,8 @@ var level_stars: Dictionary = {}
 var last_result: Dictionary = {}
 # ID level berikutnya setelah menang (di-set game_screen, dikonsumsi meta_scene).
 var next_level_id: String = ""
+# Booster pre-level yang dipilih pemain di PreLevelPopup (dikonsumsi game_screen saat setup).
+var pre_level_boosters: Array[String] = []
 
 
 func _ready() -> void:
@@ -57,6 +59,10 @@ func total_stars() -> int:
 func levels_cleared() -> int:
 	return level_stars.size()
 
+
+## Persist progress. Dipanggil oleh record_level_win dan lifecycle pause (T6.7).
+func save_progress() -> void:
+	_save_progress()
 
 func _save_progress() -> void:
 	var data := SaveManager.load_game()

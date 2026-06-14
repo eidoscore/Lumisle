@@ -63,12 +63,27 @@ func go_back() -> void:
 		change_screen("main_menu")
 
 
+var _save_pending := false
+
+
 func _notification(what: int) -> void:
-	# Lifecycle mobile (skeleton T0.8, isi penuh T6.7 — dok 04 §14.4).
+	# T6.7 — lifecycle mobile (dok 04 §14.4).
 	match what:
-		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_GO_BACK_REQUEST:
-			# T6.7: auto-save + pause audio. Nyawa/daily via timestamp, bukan timer.
-			pass
+		NOTIFICATION_APPLICATION_PAUSED:
+			# Jangan I/O berat saat pause — tulis ke variable, flush di frame berikut.
+			_save_pending = true
+			AudioManager.set_enabled(false)
+			call_deferred("_flush_on_pause")
 		NOTIFICATION_APPLICATION_RESUMED:
-			# T6.7: recompute nyawa offline (selisih waktu) + resume audio.
-			pass
+			AudioManager.set_enabled(Settings.sfx_enabled)
+			Economy.recompute_offline_regen()
+		NOTIFICATION_WM_GO_BACK_REQUEST:
+			go_back()
+
+
+func _flush_on_pause() -> void:
+	if not _save_pending:
+		return
+	_save_pending = false
+	GameState.save_progress()
+	Economy.recompute_offline_regen()

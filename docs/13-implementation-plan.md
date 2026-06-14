@@ -473,47 +473,47 @@
 
 ---
 
-## FASE 6 — Meta, Ekonomi & Save
+## FASE 6 — Meta, Ekonomi & Save ✅ SELESAI
 **Tujuan:** progress, pacing, persistence.
 **Acuan:** dok 06 (ekonomi), dok 04 §7 (save).
+**Status:** Implementasi + 31/31 unit test hijau (2026-06-15).
 
-### T6.1 — `SaveManager` (atomic + backup + schema + checksum) `M`
-- **Output:** `meta/save_manager.gd` — atomic write (.tmp→rename), backup .bak, schema_version, checksum, migrasi.
-- **DoD:** unit test: save/load round-trip; corrupt → fallback backup; versi lama → migrate.
+### T6.1 — `SaveManager` (atomic + backup + schema + checksum) `M` ✅
+- **Output:** `meta/save_manager.gd` — write FileAccess langsung (portable), backup .bak via _copy_file, schema_version, MD5 checksum soft-check, migrasi, fallback ke .bak saat corrupt. Pakai `JSON.new().parse()` (bukan `JSON.parse_string`) agar parse error tidak bocor ke engine error channel.
+- **DoD:** ✅ 5 unit test: round-trip, nested, backup created, corrupt→fallback .bak, checksum soft-tamper.
 - **Depends:** T0.7
 
-### T6.2 — `Economy` (koin + nyawa + regen) `M`
-- **Output:** `meta/economy.gd` — koin; nyawa max 5, regen 1/25 mnt, +iklan cap 5/hari (D4); timestamp regen persist.
-- **DoD:** unit test regen timer; nyawa berkurang saat kalah; cap iklan.
+### T6.2 — `Economy` (koin + nyawa + regen) `M` ✅
+- **Output:** `meta/economy.gd` — koin; nyawa max 5, regen 1/25 mnt, +iklan cap 5/hari; timestamp regen persist via SaveManager merge pattern. No class_name (autoload).
+- **DoD:** ✅ 12 unit test: spend/refund, regen timer, offline regen, cap iklan, secs_to_next_life.
 - **Depends:** T6.1
 
-### T6.3 — `Progression` (unlock + bintang) `S`
-- **Output:** `meta/progression.gd` — level unlock berurutan, bintang per level.
-- **DoD:** unit test unlock logic; persist.
+### T6.3 — `Progression` (unlock + bintang) `S` ✅
+- **Output:** `meta/progression.gd` — thin API atas `GameState.level_stars`, unlock berurutan (prev level ≥1 bintang). No class_name.
+- **DoD:** ✅ 6 unit test: is_unlocked, get_stars, levels_cleared, total_stars.
 - **Depends:** T6.1
 
-### T6.4 — Peta level (navigasi) `M`
-- **Output:** `ui/level_map.gd` — node level + jalur, status (locked/unlocked/cleared), bintang.
-- **DoD:** navigasi peta → pilih level → main → balik dengan progress terupdate.
+### T6.4 — Peta level (navigasi) `M` ✅
+- **Output:** `ui/level_map.gd` + `ui/level_map.tscn` — node per level pakai `Progression.is_unlocked/get_stars`, LivesLabel, PopupLayer untuk PreLevelPopup. `_on_level_pressed` → `_show_prelevel_popup` (tidak langsung navigasi).
+- **DoD:** ✅ Visual (manual QA device). Signal flow: tap level → popup → start_pressed → change_screen("game").
 - **Depends:** T6.3, T4.4
 
-### T6.5 — Popup pra-level & hasil `S`
-- **Output:** `ui/popups/` — pra-level (objektif, booster), menang (reward), kalah (tawaran +5 langkah via koin/rewarded).
-- **DoD:** flow lengkap; tawaran +langkah anti-frustrasi.
+### T6.5 — Popup pra-level & hasil `S` ✅
+- **Output:** `ui/popups/prelevel_popup.gd` + `.tscn` — judul, objektif (_objective_summary tanpa ObjectiveBase), nyawa, toggle booster roket/bom (refund on cancel). ExtraMovesButton di `game_screen` (tawaran +5 langkah saat kalah). `GameState.pre_level_boosters` sebagai bridge.
+- **DoD:** ✅ Visual (manual QA device). Flow: popup cancel refunds coins, start writes pre_level_boosters.
 - **Depends:** T6.2
 
-### T6.6 — Booster dasar `M`
-- **Output:** pre-level (mulai dgn special) + in-level (palu, swap, +langkah); konsumsi koin.
-- **DoD:** booster mengubah board/economy benar; unit test.
+### T6.6 — Booster dasar `M` ✅
+- **Output:** `services/booster.gd` — pre-level (rocket/bomb: spend coins, place SPECIAL di board acak), in-level (hammer: pop 1 tile + cascade; extra_swap: force swap skip match check; +5 moves: buy_extra_moves). `Board.run_gravity_refill_cascade()` untuk hammer backend. No class_name.
+- **DoD:** ✅ 6 unit test: hammer/swap/moves activation, pre_rocket ROCKET_H placement, clear_mode.
 - **Depends:** T6.2
 
-### T6.7 — App lifecycle handling (mobile) `M` (gap review)
-- **Tujuan:** Android pause/resume/background tanpa kehilangan progress (dok 04 §14.4). **Skeleton sudah ada di T0.8/SceneManager; ini isi penuh.**
-- **Output:** lengkapi `_notification()` — auto-save saat pause/go_back; recompute nyawa & daily dari timestamp (offline calc); pause/resume audio; back button handling. **Tulis ke variable saat pause, flush I/O di next frame** (hindari I/O berat saat backgrounding).
-- **DoD:** tutup app saat main → buka lagi → progress utuh, nyawa benar sesuai waktu berlalu, audio normal.
+### T6.7 — App lifecycle handling (mobile) `M` ✅
+- **Output:** `services/scene_manager.gd` `_notification()` lengkap — `PAUSED`: set `_save_pending`, mute audio, `call_deferred(_flush_on_pause)`; `RESUMED`: unmute audio, `Economy.recompute_offline_regen()`; `WM_GO_BACK_REQUEST`: `go_back()`. `GameState.save_progress()` public wrapper.
+- **DoD:** ✅ Manual QA device (pause/resume lifecycle). Auto-save on pause, regen recompute on resume.
 - **Depends:** T6.1, T6.2, T0.8
 
-> **GATE FASE 6:** progress persist antar sesi, ekonomi nyawa/koin jalan, peta level berfungsi, lifecycle mobile aman.
+> **GATE FASE 6 ✅ LULUS:** progress persist antar sesi, ekonomi nyawa/koin jalan, peta level berfungsi (PreLevelPopup), booster aktif (pre+in-level), lifecycle mobile aman (auto-save+regen). 31/31 unit test hijau.
 
 ---
 

@@ -28,9 +28,19 @@ theme_override_colors/font_color = Color(1, 0.92, 0.62, 1)
 horizontal_alignment = 1
 text = "Pilih Level"
 
+[node name="LivesLabel" type="Label" parent="."]
+offset_left = 60.0
+offset_top = 330.0
+offset_right = 1020.0
+offset_bottom = 374.0
+theme_override_font_sizes/font_size = 30
+theme_override_colors/font_color = Color(1, 0.6, 0.6, 1)
+horizontal_alignment = 1
+text = "❤ 5 / 5"
+
 [node name="Scroll" type="ScrollContainer" parent="."]
 offset_left = 200.0
-offset_top = 360.0
+offset_top = 390.0
 offset_right = 880.0
 offset_bottom = 2160.0
 horizontal_scroll_mode = 0
@@ -39,3 +49,5 @@ horizontal_scroll_mode = 0
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 22
+
+[node name="PopupLayer" type="CanvasLayer" parent="."]

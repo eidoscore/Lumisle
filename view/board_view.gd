@@ -39,6 +39,8 @@ var _disp: PackedInt32Array = PackedInt32Array()  # state TAMPILAN (encoded), di
 
 var _input_enabled := true
 var _animating := false
+## Booster mode aktif (T6.6): "" / "hammer" / "extra_swap". Di-set oleh game_screen.
+var booster_mode: String = ""
 var _selected := Vector2i(-1, -1)     # tile tersorot (tap-tap) / awal drag
 var _press_grid := Vector2i(-1, -1)   # tile tempat jari mulai menekan
 var _press_pos := Vector2.ZERO        # posisi pixel lokal saat mulai menekan
@@ -78,6 +80,17 @@ func setup_board(p_board: Board, move_rng: GameRNG) -> void:
 ## Salin state board → grid tampilan (_disp). Dipakai saat init & sinkron pra-swap.
 func _sync_disp_from_board() -> void:
 	_disp = board.cells.duplicate()
+
+
+## Paksa sync tampilan dari board (dipakai setelah pre-level booster mengubah board — T6.6).
+func sync_from_board() -> void:
+	_sync_disp_from_board()
+	_refresh_all()
+
+
+## Aktifkan / nonaktifkan input (dipakai saat resume setelah beli extra moves — T6.6).
+func set_input_enabled(val: bool) -> void:
+	_input_enabled = val
 
 
 func _disp_cell(x: int, y: int) -> int:
@@ -454,6 +467,12 @@ func _on_press(local_pos: Vector2) -> void:
 	if grid == Vector2i(-1, -1) or not board.is_playable(grid.x, grid.y):
 		_press_grid = Vector2i(-1, -1)
 		return
+	# Booster hammer: hapus tile yang di-tap lalu cascade (T6.6)
+	if booster_mode == "hammer":
+		booster_mode = ""
+		_press_grid = Vector2i(-1, -1)
+		await _apply_hammer(grid.x, grid.y)
+		return
 	_press_grid = grid
 	_press_pos = local_pos
 	_drag_swapped = false
@@ -523,8 +542,12 @@ func _do_swap(x1: int, y1: int, x2: int, y2: int) -> void:
 		return
 
 	var will_match := board.swap_will_match(x1, y1, x2, y2)
+	# extra_swap booster: izinkan swap tanpa match (T6.6)
+	var force_swap := booster_mode == "extra_swap"
+	if force_swap:
+		booster_mode = ""
 
-	if not will_match:
+	if not will_match and not force_swap:
 		# Slide ke tetangga lalu balik — jelas "ditolak", warna tetap benar (board tak berubah).
 		AudioManager.play_sfx("invalid")
 		swap_rejected.emit()
@@ -549,6 +572,37 @@ func _do_swap(x1: int, y1: int, x2: int, y2: int) -> void:
 	_input_enabled = true
 	_idle_time = 0.0
 	_clear_hint()
+
+
+## Booster Hammer (T6.6): hapus 1 tile, emit move_consumed, cascade lewat resolve.
+## Menggunakan resolve_swap dengan langkah "kosong" yang kita tiru — sebenarnya
+## kita langsung set cell kosong lalu paksa gravity via board internal.
+func _apply_hammer(x: int, y: int) -> void:
+	_input_enabled = false
+	_clear_hint()
+	AudioManager.play_sfx("special")
+	if Settings.haptic_enabled:
+		Input.vibrate_handheld(40)
+	# Pop animasi tile target
+	var tile: TileGfx = _tiles[board.idx(x, y)]
+	_burst_particles(Vector2i(x, y), tile.modulate)
+	var tw := create_tween()
+	tw.tween_property(tile, "scale", Vector2(1.5, 1.5), 0.08)
+	tw.tween_property(tile, "scale", Vector2(0, 0), 0.12)
+	await tw.finished
+	# Hapus tile di board lalu jalankan gravity+refill manual
+	board.set_cell(x, y, TileCodes.encode(TileCodes.EMPTY, TileCodes.SPECIAL_NONE))
+	_sync_disp_from_board()
+	_refresh_all()
+	# Cascade: gravity + refill + cari match baru
+	var rng_copy := _move_rng
+	var report := board.run_gravity_refill_cascade(rng_copy)
+	await _play_report(report)
+	_sync_disp_from_board()
+	_refresh_all()
+	move_consumed.emit()
+	_input_enabled = true
+	_idle_time = 0.0
 
 
 ## Animasi 2 tile bertukar posisi secara visual (geser node). TIDAK mengubah board.

@@ -25,9 +25,14 @@ var _level_start_msec := 0
 @onready var _near_miss_label: Label = $HUD/NearMissLabel
 @onready var _action_panel: VBoxContainer = $HUD/ActionPanel
 @onready var _next_level_btn: Button = $HUD/ActionPanel/NextLevelButton
+@onready var _extra_moves_btn: Button = $HUD/ActionPanel/ExtraMovesButton
 @onready var _retry_btn: Button = $HUD/ActionPanel/RetryButton
 @onready var _back_to_map_btn: Button = $HUD/ActionPanel/BackToMapButton
 @onready var _back_button: Button = $HUD/BackButton
+@onready var _booster_bar: HBoxContainer = $HUD/BoosterBar
+@onready var _hammer_btn: Button = $HUD/BoosterBar/HammerBtn
+@onready var _swap_btn: Button = $HUD/BoosterBar/SwapBtn
+@onready var _moves_btn: Button = $HUD/BoosterBar/MovesBtn
 
 var _debug_on := false
 
@@ -71,6 +76,8 @@ func _setup_level() -> void:
 	var ox := int((1080 - board_px) / 2.0)
 	_board_view.position = Vector2(ox, 240)
 	_board_view.setup_board(_board, GameRNG.new(_level.seed + 1))
+	# Terapkan pre-level booster (T6.6) yang dipilih di PreLevelPopup
+	_apply_pre_level_boosters()
 	_board_view.on_tiles_cleared = Callable(self, "_on_event")
 	_board_view.level_won.connect(_on_level_won)
 	_board_view.move_consumed.connect(consume_move)
@@ -81,6 +88,19 @@ func _setup_level() -> void:
 	if _level.tutorial and _instruction_label:
 		_instruction_label.visible = true
 		_instruction_label.text = "Geser tile agar 3+ WARNA SAMA sebaris. Ikuti panah kuning!"
+
+
+## Terapkan pre-level booster dari GameState.pre_level_boosters (T6.6).
+func _apply_pre_level_boosters() -> void:
+	var rng := GameRNG.new(_level.seed + 99)
+	for b in GameState.pre_level_boosters:
+		match b:
+			"rocket":
+				Booster.apply_pre_rocket(_board, rng)
+			"bomb":
+				Booster.apply_pre_bomb(_board, rng)
+	GameState.pre_level_boosters = []
+	_board_view.sync_from_board()
 
 
 ## Bangun LevelDefinition dari LevelSet lama (id "1".."5") kalau JSON tak punya.
@@ -163,6 +183,9 @@ func _on_debug_pressed() -> void:
 func _finish(won: bool) -> void:
 	_finished = true
 	GameState.is_game_active = false
+	Booster.clear_mode()
+	if not won:
+		Economy.spend_life()
 	var elapsed := (Time.get_ticks_msec() - _level_start_msec) / 1000.0
 	if won:
 		var stars := 1  # GDD §6.0: binary 1 star per win
@@ -198,6 +221,11 @@ func _show_result(won: bool, stars: int) -> void:
 		_near_miss_label.visible = true
 	if _action_panel:
 		_next_level_btn.visible = won
+		if _extra_moves_btn:
+			var cost := Booster.COST["in_moves"]
+			_extra_moves_btn.text = "⚡ +5 Langkah (%d 🪙)" % cost
+			# Tampilkan hanya saat kalah dan masih ada coins
+			_extra_moves_btn.visible = not won and Economy.coins >= cost
 		_retry_btn.visible = true
 		_back_to_map_btn.visible = true
 		await get_tree().create_timer(0.8).timeout
@@ -264,6 +292,51 @@ func _on_retry_pressed() -> void:
 func _on_back_to_map_pressed() -> void:
 	GameState.is_game_active = false
 	SceneManager.change_screen("level_map")
+
+
+func _on_extra_moves_pressed() -> void:
+	if Booster.buy_extra_moves():
+		_finished = false
+		_moves_left += 5
+		# Nyawa tidak di-refund — pemain sudah "gagal", extra moves = kesempatan lanjut
+		_action_panel.visible = false
+		if _result_label:
+			_result_label.visible = false
+		if _near_miss_label:
+			_near_miss_label.visible = false
+		if _back_button:
+			_back_button.visible = true
+		_update_hud()
+		_board_view.set_input_enabled(true)
+		GameState.is_game_active = true
+		Booster.clear_mode()
+
+
+func _on_hammer_pressed() -> void:
+	if Booster.activate_hammer():
+		_board_view.booster_mode = "hammer"
+		_refresh_booster_bar()
+
+
+func _on_swap_pressed() -> void:
+	if Booster.activate_extra_swap():
+		_board_view.booster_mode = "extra_swap"
+		_refresh_booster_bar()
+
+
+func _on_moves_booster_pressed() -> void:
+	if Booster.buy_extra_moves():
+		_moves_left += 5
+		_update_hud()
+
+
+func _refresh_booster_bar() -> void:
+	if _hammer_btn:
+		_hammer_btn.text = "🔨 Palu (%d🪙)%s" % [Booster.COST["in_hammer"], " [ON]" if Booster.in_level_mode == "hammer" else ""]
+	if _swap_btn:
+		_swap_btn.text = "🔄 Swap (%d🪙)%s" % [Booster.COST["in_swap"], " [ON]" if Booster.in_level_mode == "extra_swap" else ""]
+	if _moves_btn:
+		_moves_btn.text = "⚡ +5 (%d🪙)" % Booster.COST["in_moves"]
 
 
 func consume_move() -> void:

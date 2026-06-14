@@ -1,0 +1,79 @@
+[gd_scene load_steps=2 format=3 uid="uid://b0prelevelopup0001"]
+
+[ext_resource type="Script" path="res://ui/popups/prelevel_popup.gd" id="1_prelevel"]
+
+[node name="PreLevelPopup" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 0
+script = ExtResource("1_prelevel")
+
+[node name="Overlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 0
+color = Color(0, 0, 0, 0.6)
+
+[node name="Panel" type="PanelContainer" parent="."]
+offset_left = 120.0
+offset_top = 500.0
+offset_right = 960.0
+offset_bottom = 1420.0
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/separation = 28
+
+[node name="TitleLabel" type="Label" parent="Panel/VBox"]
+theme_override_font_sizes/font_size = 48
+theme_override_colors/font_color = Color(1, 0.92, 0.62, 1)
+horizontal_alignment = 1
+text = "Level 1 — Tutorial"
+autowrap_mode = 2
+
+[node name="ObjectivesLabel" type="Label" parent="Panel/VBox"]
+theme_override_font_sizes/font_size = 30
+horizontal_alignment = 1
+text = "Objektif: ..."
+autowrap_mode = 2
+
+[node name="LivesLabel" type="Label" parent="Panel/VBox"]
+theme_override_font_sizes/font_size = 30
+theme_override_colors/font_color = Color(1, 0.6, 0.6, 1)
+horizontal_alignment = 1
+text = "Nyawa: 5 / 5"
+
+[node name="SepLine" type="HSeparator" parent="Panel/VBox"]
+
+[node name="BoosterRow" type="HBoxContainer" parent="Panel/VBox"]
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="RocketBtn" type="Button" parent="Panel/VBox/BoosterRow"]
+custom_minimum_size = Vector2(310, 80)
+focus_mode = 0
+text = "🚀 Roket (20 🪙)"
+
+[node name="BombBtn" type="Button" parent="Panel/VBox/BoosterRow"]
+custom_minimum_size = Vector2(310, 80)
+focus_mode = 0
+text = "💣 Bom (30 🪙)"
+
+[node name="StartButton" type="Button" parent="Panel/VBox"]
+custom_minimum_size = Vector2(0, 96)
+focus_mode = 0
+text = "Mulai!"
+
+[node name="CancelButton" type="Button" parent="Panel/VBox"]
+custom_minimum_size = Vector2(0, 80)
+focus_mode = 0
+text = "Batal"
+
+[connection signal="pressed" from="Panel/VBox/BoosterRow/RocketBtn" to="." method="_on_rocket_pressed"]
+[connection signal="pressed" from="Panel/VBox/BoosterRow/BombBtn" to="." method="_on_bomb_pressed"]
+[connection signal="pressed" from="Panel/VBox/StartButton" to="." method="_on_start_pressed"]
+[connection signal="pressed" from="Panel/VBox/CancelButton" to="." method="_on_cancel_pressed"]

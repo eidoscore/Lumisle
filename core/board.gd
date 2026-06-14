@@ -310,6 +310,39 @@ func resolve_swap(x1: int, y1: int, x2: int, y2: int, rng: GameRNG) -> TurnRepor
 	return report
 
 
+## Gravity + refill + cascade setelah modifikasi eksternal (mis. booster hammer, T6.6).
+## Dimulai dari board yang sudah ada cell kosong; tidak ada swap — langsung gravity dulu.
+func run_gravity_refill_cascade(rng: GameRNG) -> TurnReport:
+	_rng = rng
+	_trigger_queue = []
+	_pending_clear = []
+	_swap_anchors  = []
+	_colorbomb_target = -1
+	var report := TurnReport.new()
+	# 1. Gravity + bring-down
+	var fall_events := Gravity.apply_gravity(self)
+	for e in fall_events:
+		report.add_step(e)
+	_process_bring_down(report)
+	# 2. Refill
+	var spawn_events := Gravity.apply_refill(self, rng)
+	for e in spawn_events:
+		report.add_step(e)
+	# 3. Cascade kalau ada match baru setelah refill
+	var cascade_index := 0
+	while cascade_index < MAX_CASCADE:
+		cascade_index += 1
+		var matches := MatchDetector.find_all(self)
+		if matches.is_empty() and _trigger_queue.is_empty() and _pending_clear.is_empty():
+			break
+		_resolve_cascade_step(matches, cascade_index, report, rng)
+	# 4. Dead-board reshuffle
+	if find_possible_moves().is_empty():
+		reshuffle(rng)
+		report.add_step(MoveAction.make(MoveAction.Type.RESHUFFLE, [], {}))
+	return report
+
+
 ## Satu gelombang cascade (dok 14 §1 STEP D, §3.5 resolusi simultan):
 ## 1) buat special dari matches (anchor = swap cell kalau bisa)
 ## 2) drain trigger_queue → kumpulkan area efek special + chain (special kena efek → queue)
