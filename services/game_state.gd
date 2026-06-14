@@ -25,6 +25,8 @@ var last_result: Dictionary = {}
 var next_level_id: String = ""
 # Booster pre-level yang dipilih pemain di PreLevelPopup (dikonsumsi game_screen saat setup).
 var pre_level_boosters: Array[String] = []
+# Lumi baru yang dibebaskan setelah menang (dikonsumsi MetaScene untuk popup reveal).
+var newly_freed_lumi: Array[String] = []
 
 
 func _ready() -> void:

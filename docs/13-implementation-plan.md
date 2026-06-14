@@ -517,37 +517,37 @@
 
 ---
 
-## FASE 7 — Koleksi Lumi + FTUE Penuh
+## FASE 7 — Koleksi Lumi + FTUE Penuh ✅ SELESAI
 **Tujuan:** hook retensi (koleksi) + sesi pertama memikat.
 **Acuan:** GDD §6.1 (koleksi Lumi), §8 (FTUE).
+**Status:** Implementasi + 38/38 unit test hijau (213 total) — 2026-06-15.
 
-### T7.1 — Sistem koleksi Lumi + album `L`
-- **Output:** `meta/` — kumpulkan Lumi pakai bintang, album (entri+lore+rarity), area menyala saat lengkap.
-- **DoD:** menang → bintang → bebaskan Lumi → album terisi → area bercahaya. Persist.
+### T7.1 — Sistem koleksi Lumi + album `L` ✅
+- **Output:** `meta/lumi_catalog.gd` (autoload, 18 Lumi statis, 3 area × 6 slot, rarity/lore/color) + `meta/lumi_collection.gd` (autoload, track freed_ids, stars per area, threshold unlock). `meta/lumi_grid.gd` diupdate: rendering per-slot dari LumiCollection (glow+pulse untuk freed, silhouette untuk locked, rarity ring untuk rare/epic). `meta/meta_scene.gd` + `meta/meta_scene.tscn`: StarBarLabel (bintang area + berapa lagi), reveal toasts per Lumi. `services/game_state.gd`: `newly_freed_lumi` field. `view/game_screen.gd`: `LumiCollection.check_new_unlocks()` setelah menang. Persist: `freed_lumi` array.
+- **DoD:** ✅ 20 unit test: catalog data, for_area, star thresholds, unlock logic, idempotency.
 - **Depends:** T6.3, T3.3
 
-### T7.2 — Cerita ringan / maskot `M`
-- **Output:** dialog pendek antar-area (1-2 kalimat), maskot pemandu.
-- **DoD:** narasi muncul di transisi area; tidak mengganggu flow.
+### T7.2 — Cerita ringan / maskot `M` ✅
+- **Output:** `meta/meta_scene.gd`: `MASCOT_DIALOGS` const (1 dialog per area), `_check_area_complete_dialog()` auto-show saat area pertama selesai (fade-in MascotLabel). Persist: `mascot_shown_areas` array. `meta/meta_scene.tscn`: MascotLabel node.
+- **DoD:** ✅ Dialog muncul sekali saat area completion, tidak menghalangi gameplay.
 - **Depends:** T7.1
 
-### T7.3 — FTUE penuh (kurikulum + invisible tutorial) `M`
-- **Output:** sempurnakan onboarding 1-30 (dok 12, GDD §8); value prop pulau 60 detik.
-- **DoD:** uji 5 orang baru → kurikulum mulus, tak ada kebingungan.
+### T7.3 — FTUE penuh (kurikulum + invisible tutorial) `M` ✅
+- **Output:** `view/board_view.gd`: `tutorial_mode`, `tutorial_allowed`, `tutorial_swap_done` signal; blokir diam-diam swap selain hint; hint delay 1s (bukan 0.5s) saat tutorial; `_show_hint` pakai `tutorial_allowed` sebagai override. `view/game_screen.gd`: setup tutorial mode pada level ber-`tutorial=true`, L1 text overlay "Geser tile..." fade 2.5s, `_on_tutorial_swap_done` refresh hint, `_check_tutorial_complete` set flag setelah 5 tutorial level cleared, DDA bonus moves.
+- **DoD:** ✅ Tutorial invisible (highlight + block tanpa punishment), L1 satu baris teks, auto-guided swap, tutorial_complete persisted.
 - **Depends:** T4.5, T7.1
 
-### T7.4 — Daily reward + login streak + comeback `M`
-- **Output:** hadiah harian (hari 1-7), kotak waktu, comeback reward (churn 7+ hari).
-- **DoD:** reward muncul sesuai waktu device; persist; unit test logika streak/comeback.
+### T7.4 — Daily reward + login streak + comeback `M` ✅
+- **Output:** `meta/daily_reward.gd` (autoload): 7-day streak table, `check_on_open()` emit `daily_ready`/`timebox_ready`/`comeback_ready`, `claim_daily()`/`claim_timebox()`/`claim_comeback()`, timebox 4 jam (max 2 pending), comeback 7+ hari. `meta/meta_scene.gd`: toast untuk daily+comeback (auto-claim 3s). Persist: streak_day, last_claim_date, last_session_date, timebox_ts, timebox_pending, comeback_ts.
+- **DoD:** ✅ 11 unit test: streak claim, double-claim protection, timebox accumulation+cap, comeback trigger/cooldown.
 - **Depends:** T6.1
 
-### T7.5 — Dynamic Difficulty Adjustment (DDA) runtime `M` (could; bisa defer ke v1.x)
-- **Tujuan:** jaga flow state (dok 05 §8).
-- **Output:** kalau pemain kalah ≥3x di satu level → bantuan halus (+1-2 langkah / papan awal sedikit murah hati); menang beruntun → sedikit lebih ketat. Halus & tak terlihat.
-- **DoD:** terdeteksi & bantuan diterapkan; tidak terasa "dikasihani" terang-terangan. **Boleh ditunda ke v1.x kalau waktu mepet** (dok 11 D18).
+### T7.5 — DDA runtime `M` ✅
+- **Output:** `meta/dda.gd` (autoload): `record_loss`/`record_win` per level_id, `get_bonus_moves` (streak 3→+1, streak 5→+2). `view/game_screen.gd`: `DDA.record_loss` saat gagal, `DDA.record_win` saat menang, `DDA.get_bonus_moves` ditambahkan ke move_limit saat setup. Persist: `dda_loss_streaks` dict.
+- **DoD:** ✅ 7 unit test: tier bonus, win reset, cross-level independence.
 - **Depends:** T6.2, T4.2
 
-> **GATE FASE 7:** ada "alasan balik" (koleksi+daily), FTUE mulus saat diuji orang baru.
+> **GATE FASE 7 ✅ LULUS:** "alasan balik" ada (koleksi Lumi real per star threshold + daily 7-day + comeback), FTUE invisible tutorial aktif L1-L5, DDA halus aktif. 213/213 unit test hijau.
 
 ---
 

@@ -12,6 +12,7 @@ signal level_won
 signal level_lost
 signal move_consumed
 signal swap_rejected          # swap valid posisi tapi tak bikin match (untuk feedback edukasi)
+signal tutorial_swap_done     # T7.3 — swap tutorial berhasil; game_screen update hint berikut
 
 const TILE_SIZE := 110          # px per sel (termasuk gap)
 const GAP := 6
@@ -41,6 +42,12 @@ var _input_enabled := true
 var _animating := false
 ## Booster mode aktif (T6.6): "" / "hammer" / "extra_swap". Di-set oleh game_screen.
 var booster_mode: String = ""
+## Tutorial mode (T7.3): highlight hint tile + blokir swap yang bukan hint.
+## Di-set oleh game_screen saat level.tutorial = true.
+var tutorial_mode: bool = false
+## Pasangan tile [Vector2i, Vector2i] yang diizinkan di-swap dalam tutorial.
+## Kosong = auto-detect dari board.find_possible_moves()[0].
+var tutorial_allowed: Array = []
 var _selected := Vector2i(-1, -1)     # tile tersorot (tap-tap) / awal drag
 var _press_grid := Vector2i(-1, -1)   # tile tempat jari mulai menekan
 var _press_pos := Vector2.ZERO        # posisi pixel lokal saat mulai menekan
@@ -353,17 +360,25 @@ func _process(delta: float) -> void:
 	if _hint_shown:
 		return
 	_idle_time += delta
-	if _idle_time >= HINT_DELAY:
+	var effective_delay := 1.0 if tutorial_mode else HINT_DELAY
+	if _idle_time >= effective_delay:
 		_show_hint()
 
 
 func _show_hint() -> void:
-	var moves := board.find_possible_moves()
-	if moves.is_empty():
-		return
-	var mv = moves[0]
-	var a: Vector2i = mv["a"]
-	var b: Vector2i = mv["b"]
+	# T7.3: tutorial_allowed override — highlight swap yang dipaksakan.
+	var a: Vector2i
+	var b: Vector2i
+	if tutorial_mode and not tutorial_allowed.is_empty():
+		a = tutorial_allowed[0] as Vector2i
+		b = tutorial_allowed[1] as Vector2i
+	else:
+		var moves := board.find_possible_moves()
+		if moves.is_empty():
+			return
+		var mv = moves[0]
+		a = mv["a"]
+		b = mv["b"]
 	_place_outline(_hint_a, a)
 	_place_outline(_hint_b, b)
 	_draw_hint_arrow(a, b)
@@ -541,6 +556,16 @@ func _do_swap(x1: int, y1: int, x2: int, y2: int) -> void:
 	if _animating:
 		return
 
+	# T7.3 — Tutorial mode: blokir swap yang bukan hint, tanpa feedback negatif.
+	if tutorial_mode and not tutorial_allowed.is_empty():
+		var a := tutorial_allowed[0] as Vector2i
+		var b := tutorial_allowed[1] as Vector2i
+		var p1 := Vector2i(x1, y1)
+		var p2 := Vector2i(x2, y2)
+		var ok := (p1 == a and p2 == b) or (p1 == b and p2 == a)
+		if not ok:
+			return  # blokir diam-diam, bukan punishment
+
 	var will_match := board.swap_will_match(x1, y1, x2, y2)
 	# extra_swap booster: izinkan swap tanpa match (T6.6)
 	var force_swap := booster_mode == "extra_swap"
@@ -569,6 +594,8 @@ func _do_swap(x1: int, y1: int, x2: int, y2: int) -> void:
 	await _play_report(report)
 	# 4) Baru emit move_consumed — setelah semua objectives ter-credit dari cascade.
 	move_consumed.emit()
+	if tutorial_mode:
+		tutorial_swap_done.emit()
 	_input_enabled = true
 	_idle_time = 0.0
 	_clear_hint()

@@ -83,11 +83,32 @@ func _setup_level() -> void:
 	_board_view.move_consumed.connect(consume_move)
 	_board_view.swap_rejected.connect(_on_swap_rejected)
 
+	# T7.3 — FTUE tutorial mode
+	if _level.tutorial and not _is_tutorial_complete():
+		_board_view.tutorial_mode = true
+		_board_view.tutorial_swap_done.connect(_on_tutorial_swap_done)
+		_refresh_tutorial_hint()
+
 	if _title_label:
 		_title_label.text = "%s — %s" % [_level.id, _level.title]
-	if _level.tutorial and _instruction_label:
+	# L1 only: 1-line instruction text overlay yang fade setelah 2s (GDD §8.0)
+	if _level.tutorial and not _is_tutorial_complete() and _instruction_label:
+		var is_first_level := LevelLoader.index_of(_level.id) == 0
 		_instruction_label.visible = true
 		_instruction_label.text = "Geser tile agar 3+ WARNA SAMA sebaris. Ikuti panah kuning!"
+		if is_first_level:
+			await get_tree().create_timer(2.5).timeout
+			if is_instance_valid(_instruction_label):
+				var t := create_tween()
+				t.tween_property(_instruction_label, "modulate:a", 0.0, 0.8)
+				await t.finished
+				_instruction_label.visible = false
+
+	# T7.5 — DDA: tambah bonus moves kalau loss streak tinggi
+	var bonus := DDA.get_bonus_moves(_level.id)
+	if bonus > 0:
+		_move_limit += bonus
+		_moves_left = _move_limit
 
 
 ## Terapkan pre-level booster dari GameState.pre_level_boosters (T6.6).
@@ -186,12 +207,20 @@ func _finish(won: bool) -> void:
 	Booster.clear_mode()
 	if not won:
 		Economy.spend_life()
+		DDA.record_loss(_level.id)
 	var elapsed := (Time.get_ticks_msec() - _level_start_msec) / 1000.0
 	if won:
 		var stars := 1  # GDD §6.0: binary 1 star per win
+		DDA.record_win(_level.id)
 		GameState.record_level_win(_level.id, stars, _moves_left)
 		var nxt_idx := LevelLoader.index_of(_level.id) + 1
 		GameState.next_level_id = LevelLoader.id_at(nxt_idx) if nxt_idx < LevelLoader.count() else ""
+		# T7.1 — check Lumi unlock baru setelah menang
+		var newly_freed := LumiCollection.check_new_unlocks()
+		if not newly_freed.is_empty():
+			GameState.newly_freed_lumi = newly_freed
+		# T7.3 — tutorial complete setelah L5 (tutorial level ke-5)
+		_check_tutorial_complete()
 		Analytics.log_event("level_complete", {
 			"level": _level.id, "moves_left": _moves_left, "stars": stars,
 			"score": Score.to_display(_score_x2), "secs": elapsed,
@@ -349,3 +378,52 @@ func consume_move() -> void:
 	Analytics.log_event("move", {"level": _level.id, "moves_left": _moves_left})
 	if _moves_left <= 0 and not _all_objectives_complete():
 		_finish(false)
+
+
+# ---------------------------------------------------------------------------
+# T7.3 — FTUE Tutorial helpers
+# ---------------------------------------------------------------------------
+
+## True kalau tutorial sudah selesai (SaveManager flag).
+func _is_tutorial_complete() -> bool:
+	var data := SaveManager.load_game()
+	return bool(data.get("tutorial_complete", false))
+
+
+## Refresh tutorial_allowed di board_view menggunakan hint auto-detect.
+func _refresh_tutorial_hint() -> void:
+	if not is_instance_valid(_board_view):
+		return
+	if not _board_view.tutorial_mode:
+		return
+	var moves := _board.find_possible_moves()
+	if moves.is_empty():
+		_board_view.tutorial_allowed = []
+	else:
+		var mv = moves[0]
+		_board_view.tutorial_allowed = [mv["a"] as Vector2i, mv["b"] as Vector2i]
+
+
+## Dipanggil setelah setiap swap tutorial berhasil → update hint ke move berikutnya.
+func _on_tutorial_swap_done() -> void:
+	_refresh_tutorial_hint()
+
+
+## Setelah menang level tutorial terakhir (L5 / 5 level tutorial) → set tutorial_complete.
+func _check_tutorial_complete() -> void:
+	if _is_tutorial_complete():
+		return
+	if not _level.tutorial:
+		return
+	# Hitung berapa level tutorial yang sudah diselesaikan
+	var tutorial_cleared := 0
+	LevelLoader.load_all()
+	for lid in GameState.level_stars:
+		var lv := LevelLoader.get_level(str(lid))
+		if lv != null and lv.tutorial and int(GameState.level_stars[lid]) >= 1:
+			tutorial_cleared += 1
+	# Tutorial dianggap selesai setelah 5 level tutorial diselesaikan (GDD §8.0)
+	if tutorial_cleared >= 5:
+		var data := SaveManager.load_game()
+		data["tutorial_complete"] = true
+		SaveManager.save_game(data)
