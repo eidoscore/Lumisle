@@ -39,7 +39,7 @@ Dokumen riset pasar & dekonstruksi Royal Match ada di folder `../../docs/` (root
 | — | [REVIEW-PROMPT](REVIEW-PROMPT.md) | Prompt minta review AI lain — **produk/desain/bisnis** | Lu |
 | — | [TECH-REVIEW-PROMPT](TECH-REVIEW-PROMPT.md) | Prompt minta review AI lain — **teknis/arsitektur/engineering** | Lu + AI |
 
-> **Catatan revisi:** Dokumen ini sudah melalui **3 review eksternal independen** (Qwen, GPT-5.5, DeepSeek). Temuan yang konvergen sudah diterapkan: vertical-slice-first, win-rate per-band, ensemble solver, FTUE kurikulum, tile CC0 konsisten, timeline ~8 bulan. Jejak di dok 11 (log keputusan, ditandai `[REVIEW]`/`[3-REVIEW]`).
+> **Catatan revisi:** Dokumen ini sudah melalui **3 review eksternal independen** (Qwen, GPT-5.5, DeepSeek) + **1 gap analysis mendalam (2026-06-15)**. Temuan yang konvergen sudah diterapkan: vertical-slice-first, win-rate per-band, ensemble solver, FTUE kurikulum, tile CC0 konsisten, timeline ~8 bulan. Gap analysis 2026-06-15 menambahkan: star system, Lumi Burst (remaining moves celebration), screen designs, hint priority, tutorial blocking mechanic, Lumi area structure, push notif, app rating, cascade escalation, haptic spec. Jejak di dok 11 (log keputusan, ditandai `[REVIEW]`/`[3-REVIEW]`/`[GAP-FILL]`).
 
 ---
 

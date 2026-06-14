@@ -256,4 +256,21 @@ Berapa jam/minggu realistis lu bisa curahkan? (mempengaruhi estimasi)
 | 2026-05-31 | **[QWEN-FINAL] Konsistensi: playable_mask PackedInt32Array, level_definition→data/, DifficultyBand enum, JSON schema konkret, color_subset Array[int] authoring** | Hilangkan ambiguitas antar-dokumen |
 | 2026-05-31 | **[QWEN-FINAL] Task baru: T4.0 entry resources, T4.1b tres→json exporter; T4.3 dipecah 3a/3b/3c; i18n CSV di T0.5** | Detail konkret sebelum coding |
 
+| 2026-06-15 | **[GAP-FILL] Star system: 1 bintang/level binary (menang=1, bukan 1-3 stars)** | Modern casual standard (Royal Match model); simpler tracking; tidak membebani pemain dengan "perfect" |
+| 2026-06-15 | **[GAP-FILL] "Lumi Burst" (remaining moves celebration)** — sisa langkah otomatis trigger special chain + skor → koin | Mekanik wajib match-3 modern (Sugar Crush/Royal Bonus); momen paling satisfying saat menang dengan efisiensi |
+| 2026-06-15 | **[GAP-FILL] Lumi area structure: 3 area v1, 6 Lumi/area, biaya bintang 3-20, total 64 bintang/area** | Konkretisasi meta yang sebelumnya tidak ada angka; harus dispesifikasi sebelum implementasi Fase 7 |
+| 2026-06-15 | **[GAP-FILL] Tutorial blocking: tile non-highlight di-dim α0.5 + swap salah diblokir + hint immediate** | "Tutorial invisible" yang sebelumnya tidak ada detail implementasi; field tutorial_forced_swaps ditambah ke LevelDefinition |
+| 2026-06-15 | **[GAP-FILL] Hint priority: near-special > obstacle-adjacent > collect-most > random valid** | Hint yang random tidak berguna; hint yang prioritaskan special creation meningkatkan pembelajaran mekanik |
+| 2026-06-15 | **[GAP-FILL] Move counter warning: ≤5=kuning pulse, ≤3=merah pulse+tick, ×1=vignette merah** | Universal di semua top match-3; tanpa ini pemain tidak sadar waktu hampir habis |
+| 2026-06-15 | **[GAP-FILL] Anti-frustration timing: +5 langkah maks 2×/sesi, penawaran ke-1 free ad/80 koin, ke-2 160 koin** | Sebelumnya tidak ada limit dan tidak ada biaya yang dispesifikasi; batas perlu untuk ekonomi sehat |
+| 2026-06-15 | **[GAP-FILL] Daily reward schedule: 7-hari, reset jika skip, reward D7=paling besar** | Schedule konkrit untuk implementasi Fase 7 |
+| 2026-06-15 | **[GAP-FILL] Comeback reward: 5 nyawa + 150 koin + 2 booster setelah 7+ hari churn** | Detail FR-M07 yang sebelumnya hanya FR tanpa design |
+| 2026-06-15 | **[GAP-FILL] Push notif: 3 jenis lokal (lives full/chest/comeback), minta permission setelah win L1** | Notifikasi sama sekali tidak ada di dok sebelumnya; critical untuk retensi |
+| 2026-06-15 | **[GAP-FILL] App rating: Play In-App Review API setelah win L12, tidak kalah 3× sebelumnya** | Timing optimal: sudah invested tapi tidak frustrasi |
+| 2026-06-15 | **[GAP-FILL] Screen designs: pre-level (sheet overlay), win (sequence animasi), fail ("Hampir!" + near-miss info)** | Tidak ada spec screen sebelumnya; dibutuhkan sebelum implementasi Fase 6-7 |
+| 2026-06-15 | **[GAP-FILL] Level map: zigzag scroll, 3 node states, landmark per area** | Visual design level map belum dispesifikasi |
+| 2026-06-15 | **[GAP-FILL] Collectible bring-down mechanic detail: non-swappable, gravity normal, delivered saat reach bottom** | Mekanik ini sudah ada di objectives tapi cara kerjanya tidak pernah dijelaskan |
+| 2026-06-15 | **[GAP-FILL] Cascade juice escalation: pitch/partikel/shake table per cascade wave, cap cascade 5+** | Audio/visual escalation sebelumnya hanya "naik pitch" tanpa angka |
+| 2026-06-15 | **[GAP-FILL] Haptic pattern spec: 7 momen berbeda dengan timing ms** | Haptic sebelumnya hanya "haptic saat combo/menang" |
+
 > Update tabel ini tiap kali keputusan di bagian 3 diselesaikan.

@@ -22,7 +22,7 @@ func _build_list() -> void:
 		var btn := Button.new()
 		btn.custom_minimum_size = Vector2(640, 96)
 		btn.focus_mode = Control.FOCUS_NONE
-		var star_txt := ("★".repeat(stars) + "☆".repeat(3 - stars)) if stars > 0 else "☆☆☆"
+		var star_txt := "★" if stars > 0 else "☆"
 		if locked:
 			btn.text = "🔒 %s" % lv.title
 			btn.disabled = true

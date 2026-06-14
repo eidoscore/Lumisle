@@ -45,7 +45,9 @@
 | FR-C05 | Cascade / chain reaction (match beruntun otomatis) | Must |
 | FR-C06 | Pool 6 warna; tiap level menampilkan SUBSET (4/5/6) yang dipilih saat generate (berseed, dipandu difficulty) | Must |
 | FR-C07 | Deteksi "no more moves" → reshuffle papan otomatis | Must |
-| FR-C08 | Hint (highlight kemungkinan match) setelah idle X detik | Should |
+| FR-C08 | Hint (highlight kemungkinan match) setelah idle 5 detik, prioritas: near-special > obstacle-adjacent > random valid | Should |
+| FR-C09 | Move counter warning: ≤5 langkah = kuning pulse; ≤3 = merah pulse + tick SFX; langkah terakhir = vignette merah | Must |
+| FR-C10 | **Remaining Moves Celebration ("Lumi Burst"):** saat menang dengan sisa langkah, sisa langkah otomatis trigger special chain + score bonus → konversi ke koin | Must |
 
 ### 3.2 Special Items & Combo
 | ID | Requirement | Prioritas |
@@ -85,22 +87,26 @@
 ### 3.5 Meta & Progression
 | ID | Requirement | Prioritas |
 |---|---|---|
-| FR-M01 | Menang level → dapat bintang/koin | Must |
+| FR-M01 | Menang level → **1 bintang** (binary: menang=1, kalah=0). Replay tidak beri bintang ekstra. Bintang permanen. | Must |
 | FR-M02 | Sistem progress (level keberapa, unlock berurutan) | Must |
-| FR-M03 | Meta **KOLEKSI "Lumi" (roh cahaya)** pakai bintang — hook utama (lihat GDD §6.1) | Must |
-| FR-M04 | **Album/koleksi Lumi** (entri, lore singkat, progress per area) | Must |
+| FR-M03 | Meta **KOLEKSI "Lumi" (roh cahaya)** pakai bintang — hook utama (lihat GDD §6.0-§6.1) | Must |
+| FR-M04 | **Album/koleksi Lumi** (entri, lore singkat, progress per area). v1: 3 area × 6 Lumi = 18 Lumi total. | Must |
 | FR-M05 | Cerita ringan / maskot pemandu (1-2 kalimat per area) | Should |
-| FR-M06 | Daily reward / login streak | Should |
-| FR-M07 | **Comeback reward** (pemain kembali setelah churn 7+ hari) | Should |
+| FR-M06 | Daily reward: kalender 7-hari streak, reset jika skip hari, reward naik tiap hari (detail GDD §6.3.1) | Should |
+| FR-M07 | **Comeback reward** (pemain kembali setelah 7+ hari): 5 nyawa + 150 koin + 2 booster (detail GDD §6.3.3) | Should |
 | FR-M08 | Area pulau menyala (redup→bercahaya) seiring Lumi terkumpul | Should |
+| FR-M09 | **Push notifications lokal** (3 jenis: lives full, chest ready, comeback 72h) — minta permission setelah win L1 | Should |
+| FR-M10 | **App rating prompt** via Google Play In-App Review API: setelah win L12, tidak pernah gagal 3× berturut-turut | Should |
+| FR-M11 | **Lumi rarity** (Common/Rare/Epic per area) — visual berbeda, lore lebih panjang, tidak mempengaruhi gameplay | Could |
 
 ### 3.5.1 FTUE (First Time User Experience) — KRITIS
 | ID | Requirement | Prioritas |
 |---|---|---|
-| FR-F01 | Tutorial **invisible** (highlight tile, BUKAN popup teks) | Must |
-| FR-F02 | Level 1-3 **guaranteed win** + "wow moment" (special/cascade) | Must |
-| FR-F03 | Value proposition pulau tersampaikan dalam **60 detik pertama** | Must |
-| FR-F04 | Uji FTUE ke ≥5 orang yang belum pernah lihat game | Should |
+| FR-F01 | Tutorial **invisible**: highlight 2 tile target (pulse+glow), tile lain di-dim (alpha 0.5), swap salah **diblokir** (tidak makan langkah), hint langsung tanpa idle delay | Must |
+| FR-F02 | Level 1-3 **guaranteed win** via `spawn_pattern` + field `tutorial_forced_swaps` — board bukan random, pre-set agar menang dalam N langkah jika hint diikuti | Must |
+| FR-F03 | Value proposition pulau tersampaikan dalam **60 detik pertama** (Lumi meta tease saat menang L1) | Must |
+| FR-F04 | Tutorial selesai setelah L5 → flag `tutorial_complete` → input blocking dihapus | Must |
+| FR-F05 | Uji FTUE ke ≥5 orang yang belum pernah lihat game (gate dok 12 F1-F8) | Should |
 
 ### 3.6 Ekonomi
 | ID | Requirement | Prioritas |
@@ -119,6 +125,15 @@
 | FR-N03 | IAP "Remove Ads" (hapus interstitial/banner) | Must |
 | FR-N04 | IAP starter pack / paket koin | Could |
 | FR-N05 | Mediation (AdMob; opsi AppLovin nanti) | Should |
+
+### 3.7.1 Screen Design (UI)
+| ID | Requirement | Prioritas |
+|---|---|---|
+| FR-U01 | **Pre-level screen** (overlay sheet): tampilkan level number, semua objektif + ikon, move limit, 3 slot booster pre-level, tombol Main!/Back | Must |
+| FR-U02 | **Win screen**: animasi bintang → koin count-up → progress bar Lumi → Lumi reveal (jika unlock) → tombol Next Level | Must |
+| FR-U03 | **Fail screen**: framing positif ("Hampir!") + info near-miss ("Kurang N tile") + Retry / Back to Map. Tanpa interstitial ad. | Must |
+| FR-U04 | **Level map**: zigzag path, 3 node states (terkunci/selesai/aktif), landmark per area | Should |
+| FR-U05 | Move counter warning: warna + pulse (detail GDD §3.6.2) | Must |
 
 ### 3.8 Sistem Pendukung
 | ID | Requirement | Prioritas |

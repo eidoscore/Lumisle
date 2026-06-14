@@ -40,6 +40,8 @@ class_name LevelDefinition extends Resource
 @export var archetype: String           # niat desain (combo_playground, bottleneck, dll)
 @export var difficulty_band: String     # label: lihat enum DifficultyBand di bawah
 @export var hand_crafted: bool          # true = level manual (1-30), JANGAN disentuh regenerator
+@export var is_tutorial: bool           # true = L1-L5, aktifkan tutorial blocking di BoardView
+@export var tutorial_forced_swaps: Array[Vector2i] # urutan swap yang di-highlight (tiap entry = posisi tile "dari") — hanya dipakai kalau is_tutorial=true; Array kosong = hint otomatis via find_best_hint_move()
 @export var generator_version: int      # versi generator pembuat (deteksi level usang)
 @export var ruleset_version: int        # versi aturan resolusi (dok 14) saat level dibuat
 @export var rng_algorithm_version: int  # versi algoritma RNG/shuffle (reproducibility)

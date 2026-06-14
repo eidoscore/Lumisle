@@ -159,7 +159,7 @@ func _finish(won: bool) -> void:
 	GameState.is_game_active = false
 	var elapsed := (Time.get_ticks_msec() - _level_start_msec) / 1000.0
 	if won:
-		var stars := LevelSet.stars_for(_moves_left, _move_limit)
+		var stars := 1  # GDD §6.0: binary 1 star per win
 		GameState.record_level_win(_level.id, stars, _moves_left)
 		Analytics.log_event("level_complete", {
 			"level": _level.id, "moves_left": _moves_left, "stars": stars,
@@ -180,7 +180,7 @@ func _show_result(won: bool, stars: int) -> void:
 	if _result_label:
 		var txt := "MENANG!" if won else "KALAH"
 		if won:
-			txt += "\n" + "★".repeat(stars) + "☆".repeat(3 - stars)
+			txt += "\n★"
 		_result_label.text = txt
 		_result_label.visible = true
 		_animate_result(won)
