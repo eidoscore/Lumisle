@@ -541,10 +541,11 @@ func _do_swap(x1: int, y1: int, x2: int, y2: int) -> void:
 	await _anim_swap_visual(x1, y1, x2, y2)
 	# 2) Mutasi board + dapatkan replay log.
 	var report := board.resolve_swap(x1, y1, x2, y2, _move_rng)
-	move_consumed.emit()
-	# 3) Sinkronkan grid ke state pasca-swap, lalu replay cascade.
+	# 3) Sinkronkan grid ke state pasca-swap, lalu replay cascade (credit objectives dulu).
 	_refresh_all()
 	await _play_report(report)
+	# 4) Baru emit move_consumed — setelah semua objectives ter-credit dari cascade.
+	move_consumed.emit()
 	_input_enabled = true
 	_idle_time = 0.0
 	_clear_hint()

@@ -27,6 +27,7 @@ var _level_start_msec := 0
 @onready var _next_level_btn: Button = $HUD/ActionPanel/NextLevelButton
 @onready var _retry_btn: Button = $HUD/ActionPanel/RetryButton
 @onready var _back_to_map_btn: Button = $HUD/ActionPanel/BackToMapButton
+@onready var _back_button: Button = $HUD/BackButton
 
 var _debug_on := false
 
@@ -68,7 +69,7 @@ func _setup_level() -> void:
 	_board_view = $BoardView
 	var board_px := _level.board_width * 110
 	var ox := int((1080 - board_px) / 2.0)
-	_board_view.position = Vector2(ox, 300)
+	_board_view.position = Vector2(ox, 240)
 	_board_view.setup_board(_board, GameRNG.new(_level.seed + 1))
 	_board_view.on_tiles_cleared = Callable(self, "_on_event")
 	_board_view.level_won.connect(_on_level_won)
@@ -187,6 +188,8 @@ func _show_result(won: bool, stars: int) -> void:
 		_result_label.text = txt
 		_result_label.visible = true
 		_animate_result(won)
+	if _back_button:
+		_back_button.visible = false
 	if not won and _near_miss_label:
 		var short := _tiles_remaining_total()
 		_near_miss_label.text = "Kurang %d tile lagi..." % short
